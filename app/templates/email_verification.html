@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+
+        .header {
+            background-color: #003865;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .logo {
+            max-width: 150px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .container {
+            padding: 20px;
+            background: white;
+            margin: 20px auto;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center; /* Center-align all text and elements inside */
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #003865;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .cta-button:hover {
+            background-color: #002c5a;
+        }
+
+        .footer {
+            background-color: #4f5961;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+
+            .cta-button {
+                font-size: 14px;
+                padding: 8px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <img src="https://campuslife-browzer-platform.s3.eu-west-2.amazonaws.com/images/89b10a40d1011fdd420af5a178e0e77f" alt="UofG Logo" class="logo">
+        <h1>Verify Your Account</h1>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <p>Dear Collaborator,</p>
+        <p>Welcome, and thank you for contributing to the BEATS dataset.</p>
+        <p>To complete your registration and access the platform, please confirm your email by clicking the button below:</p>
+        <a href="{{ link }}" class="cta-button">Confirm Your Email</a>
+        <p>If the button doesn’t work, copy and paste the following link into your browser:</p>
+        <p><a href="{{ link }}" style="color: #003865;">{{ link }}</a></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2024 the BEATS dataset. All rights reserved.</p>
+    </div>
+</body>
+</html>

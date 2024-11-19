@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The BEATS Dataset</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+
+        .header {
+            background-color: #003865;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header img {
+            max-width: 120px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-column,
+        .right-column {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .left-column {
+            max-width: 60%;
+        }
+
+        .right-column {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .right-column img {
+            max-width: 70%;
+            max-height: 70%;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer {
+            background-color: #4f5961;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+
+            .left-column,
+            .right-column {
+                max-width: 100%;
+            }
+
+            .right-column img {
+                max-width: 75%;
+                /* Resize image for smaller screens */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header">
+        <img src="https://campuslife-browzer-platform.s3.eu-west-2.amazonaws.com/images/89b10a40d1011fdd420af5a178e0e77f"
+            alt="UofG Logo">
+        <h1>The BEATS Dataset</h1>
+        <p>Biomarkers Experience and Affect from Therapeutic Soundspaces</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Left Column -->
+        <div class="left-column">
+            <h2>About the Project</h2>
+            <p>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin nec viverra turpis. Nullam bibendum
+                ligula in metus aliquet, a fermentum sapien laoreet. Aenean facilisis semper ligula, nec laoreet
+                lectus tristique non. Sed a facilisis justo, id placerat nunc. Integer facilisis neque quis velit
+                pharetra, vitae dapibus nisl sollicitudin.
+            </p>
+            <p>
+                Nulla ut erat mauris. Sed aliquam leo vitae ipsum eleifend, non euismod felis posuere. Nullam non mauris
+                dolor. Duis maximus pretium ultricies. Sed interdum, diam non convallis elementum, ex dui ultricies
+                mauris, quis scelerisque nulla sem sed felis. Vivamus fringilla, nisi et auctor faucibus, libero enim
+                eleifend purus, in volutpat metus ex ut elit. Phasellus fermentum libero porttitor lectus placerat, non
+                tempor tellus volutpat. Quisque congue eros id aliquet condimentum. Nunc ut maximus urna, auctor
+                interdum tellus. Curabitur congue purus eget semper faucibus. Vestibulum accumsan varius nisi sed
+                sollicitudin. Sed pretium ante consequat arcu convallis, sit amet pellentesque quam laoreet. Integer
+                imperdiet nunc at erat cursus suscipit.
+            </p>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+            <img src="https://www.empatica.com/website/assets/images/embraceplus/embraceplus_closed_side_hero-lg-xhdpi.png"
+                alt="Project Image">
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <h3>Citation</h3>
+        <p>
+            If you use the BEATS dataset in your research, please cite our work:
+        </p>
+        <p>
+            <i>[Placeholder Citation Here]</i>
+        </p>
+    </div>
+</body>
+
+</html>
