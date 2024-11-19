@@ -24,8 +24,8 @@ class User(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
     
-    # participants = db.relationship('Participant', backref='user')
-    # devices = db.relationship('Device', backref='user')
+    participants = db.relationship('Participant', backref='user')
+    devices = db.relationship('Device', backref='user')
 
     @classmethod
     def get_by_id(cls, id, show_deleted=False):
@@ -50,7 +50,7 @@ class User(db.Model):
         return cls.query.filter_by(deleted=False, is_verified=False).all()
     
     @classmethod
-    def get_all_active_users(cls):
+    def get_all_verified_users(cls):
         return cls.query.filter_by(deleted=False, is_verified=True).all()
 
     def save(self):

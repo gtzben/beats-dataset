@@ -5,7 +5,8 @@ Author: Benjamin Gutierrez Serafin
 Date: 2024-11-18
 """
 
-import bcrypt
+import bcrypt, hmac, hashlib
+from cryptography.fernet import Fernet
 
 from itsdangerous import URLSafeTimedSerializer
 
@@ -15,17 +16,46 @@ from flask_mail import Message
 from app.extensions import mail
 
 
-def hash_string(string):
+def hash_password(password):
     """
+    Hash password to store safely in DB. 
+    Once password hashed, it can never be recovered
+    --------------
+    Inputs:
+        password(str):
+    
+    Outputs:
+        password_hashed(str):
     """
-    string_hashed = bcrypt.hashpw(string.encode('utf-8'),bcrypt.gensalt())
-    return string_hashed.decode('utf-8')
+    password_hash = bcrypt.hashpw(password.encode('utf-8'),bcrypt.gensalt()).decode('utf-8')
+    return password_hash
+
+def hash_email(email):
+    """Hashes an email deterministically using HMAC and a secret key."""
+    return hmac.new(current_app.config["SECRET_KEY"].encode(), email.encode(), hashlib.sha256).hexdigest()
 
 
-def check_string(string, hashed):
+def check_password(password, hashed):
     """
     """
-    return bcrypt.checkpw(string.encode('utf-8'), hashed.encode('utf-8'))
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+
+def encrypt_email(email):
+    """
+    
+    """
+    cipher_suite = Fernet(current_app.config["ENCRYPT_EMAIL_KEY"])
+    string_encrypted = cipher_suite.encrypt(email.encode('utf-8')).decode('utf-8')
+    return string_encrypted
+
+def decrypt_email(encrypted_email):
+    """
+    
+    """
+    cipher_suite = Fernet(current_app.config["ENCRYPT_EMAIL_KEY"])
+    string_decrypted = cipher_suite.decrypt(encrypted_email.encode('utf-8')).decode('utf-8')
+    return string_decrypted
 
 
 def generate_token(email, salt=None):
@@ -48,7 +78,7 @@ def verify_token(token, max_age=(60 * 60), salt=None):
     return email
 
 
-def send_email(to, subject, link, html):
+def send_email(to, subject, html, participant=None, **kwargs):
     """
     
     """
@@ -56,12 +86,14 @@ def send_email(to, subject, link, html):
     try:
         msg = Message(subject,
                       recipients=[to],
-                      html=render_template(html, link=link)
+                      html=render_template(html, **kwargs)
                       )
         
         mail.send(msg)
-
-        current_app.logger.debug(f"Email '{subject}' sent to {to}!")
+        if participant:
+            current_app.logger.debug(f"Email '{subject}' sent to {participant}!")
+        else:
+            current_app.logger.debug(f"Email '{subject}' sent to {to}!")
 
     except Exception as e:
         current_app.logger.exception(f"Error while sending the email '{subject}' to {to}")

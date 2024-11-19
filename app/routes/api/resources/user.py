@@ -5,25 +5,19 @@ Author: Benjamin Gutierrez Serafin
 Date: 2024-11-18
 """
 
-import os
+from http import HTTPStatus
 
 from flask import request, url_for, current_app, render_template, make_response
 from flask_restful import Resource
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from http import HTTPStatus
 
 from marshmallow import ValidationError
+
+from app.routes.api.schemas.user import UserSchema
 
 from app.routes.api.models.user import User
 
 from app.utils import generate_token, verify_token, send_email
-
-from app.routes.api.schemas.user import UserSchema
-
-
-
-user_schema = UserSchema()
-users_schema = UserSchema(many=True)
 
 
 class UserResource(Resource):
@@ -54,10 +48,10 @@ class UserResource(Resource):
                 if user is None:
                     return {'message': 'User not found'}, HTTPStatus.NOT_FOUND
                 
-                data = user_schema.dump(user)
+                data = UserSchema().dump(user)
             else:
                 all_users = User.get_all_users()
-                data = users_schema.dump(all_users)
+                data = UserSchema(many=True).dump(all_users)
             return data, HTTPStatus.OK
         else:
             return {"message":"You are not allowed to see this information"}, HTTPStatus.FORBIDDEN
@@ -77,7 +71,7 @@ class UserResource(Resource):
         json_data = request.get_json()
 
         try:
-            data = user_schema.load(json_data)
+            data = UserSchema().load(json_data)
         except ValidationError as errors:
             return {'message': 'Validation errors', 'errors': errors.messages}, HTTPStatus.BAD_REQUEST
         
@@ -91,29 +85,35 @@ class UserResource(Resource):
 
         user.save()
 
-        token = generate_token(user.email, salt='activate')
+        token = generate_token(user.email, salt='verify')
 
-        subject = 'Please, confirm your registration.'
-
-        link = url_for('api.useractivateresource',
+        #
+        subject = 'Please, confirm your registration to start using the BEATS API'
+        greetings = 'Dear Collaborator,'
+        thank_you = 'Welcome, and thank you for contributing to the BEATS dataset.'
+        next_steps = 'To complete your registration and access the platform, please confirm your email by clicking the button below:'
+        link = url_for('api.userverifyresource',
                        token=token,
                        _external=True)
 
+        #
+        send_email(user.email,
+                   subject,
+                   'email_verification.html',
+                   greetings=greetings,
+                   thank_you=thank_you,
+                   next_steps=next_steps,
+                   link=link)
 
-        send_email(to=user.email,
-                   subject=subject,
-                   link=link,
-                   html='email_verification.html')
+        user_created = UserSchema().dump(user)
 
-        user_created = user_schema.dump(user)
-
-        self.logger.debug(f"Account for {user.email} has been created!")
+        self.logger.debug(f"Account for {user.email} has been created! Pending for email verification.")
 
         return user_created, HTTPStatus.CREATED
 
 
 
-class UserActivateResource(Resource):
+class UserVerifyResource(Resource):
     """
     TODO
     """
@@ -129,7 +129,7 @@ class UserActivateResource(Resource):
         
         """
 
-        email = verify_token(token, max_age=(60 * 60 * 24),salt='activate') # Token expires in 1 day
+        email = verify_token(token, max_age=(60 * 60 * 24),salt='verify') # Token expires in 1 day
 
         if email is False:
             return {'message': 'Invalid token or token expired'}, HTTPStatus.BAD_REQUEST
@@ -140,79 +140,11 @@ class UserActivateResource(Resource):
             return {'message': 'User not found'}, HTTPStatus.NOT_FOUND
 
         if user.is_verified is True:
-            return {'message': 'The user account is already activated'}, HTTPStatus.BAD_REQUEST
+            return {'message': 'The user account is already verified'}, HTTPStatus.BAD_REQUEST
 
         user.is_verified = True
         user.save()
 
-        self.logger.debug(f"User account of {user.email} has been activated!")
+        self.logger.debug(f"User account of {user.email} has been verified!")
 
-        # return {"message":"Your account has been activated!"}, HTTPStatus.OK
-        return make_response(render_template('account_activated.html'), HTTPStatus.OK, {'Content-Type': 'text/html'})
-
-
-# class SingleUserResource(Resource):
-
-#     """
-#     TODO
-    
-#     """
-
-#     def __init__(self, **kwargs):
-#         self.logger = kwargs.get('logger')
-
-#     @jwt_required()
-#     def get(self, id):
-
-#         """
-#         TODO
-        
-#         """
-
-#         current_user = User.get_by_id(id=get_jwt_identity())
-
-#         if current_user.is_superuser:
-#             user = User.get_by_id(id=id, show_deleted=True)
-
-#             if user is None:
-#                 return {'message': 'User not found'}, HTTPStatus.NOT_FOUND
-            
-#             data = user_schema.dump(user)
-#             return data, HTTPStatus.OK
-        
-#         else:
-#             return {"message":"You are not allowed to see this information"}, HTTPStatus.FORBIDDEN
-        
-#     @jwt_required()
-#     def delete(self, id):
-#         """
-#         TODO
-
-#         - Soft delete users
-#         """
-
-#         current_user = User.get_by_id(id=get_jwt_identity())
-
-#         if current_user.is_superuser:
-#             user = User.get_by_id(id=id, show_deleted=True)
-
-#             if user is None:
-#                 return {"message": "User not found."}, HTTPStatus.NOT_FOUND
-            
-#             if user.deleted:
-#                 return {"message": f"The user {user.id} is already deleted"}, HTTPStatus.CONFLICT
-            
-#             if current_user.is_superuser and user.is_superuser:
-#                 return {"message": f"The super user account cannot be deleted at the moment."}, HTTPStatus.FORBIDDEN
-            
-#             return {"message":f"User {user.username} has been deleted!"}, HTTPStatus.OK
-
-#         else:
-#             return {"message":"You are not allowed to delete this resource"}, HTTPStatus.FORBIDDEN
-
-        
-        
-
-
-
-
+        return make_response(render_template('account_verified.html'), HTTPStatus.OK, {'Content-Type': 'text/html'})

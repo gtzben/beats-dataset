@@ -15,7 +15,7 @@ from flask_jwt_extended import (create_access_token,
     get_jwt
 )
 
-from app.utils import check_string
+from app.utils import check_password
 from app.routes.api.models.user import User
 
 black_list = set()
@@ -34,11 +34,11 @@ class LoginResource(Resource):
 
         user = User.get_by_email(email=email)
 
-        if not user or not check_string(password,user.password):
+        if not user or not check_password(password,user.password):
             return {'message':'Email or password is incorrect'}, HTTPStatus.UNAUTHORIZED
 
         if user.is_verified is False:
-            return {'message': 'The user account is not activated yet'}, HTTPStatus.FORBIDDEN
+            return {'message': 'The user account is not verified yet'}, HTTPStatus.FORBIDDEN
         
         access_token = create_access_token(identity=user.id, fresh=True)
         refresh_token = create_refresh_token(identity=user.id)

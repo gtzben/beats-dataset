@@ -6,9 +6,7 @@ Date: 2024-11-18
 """
 
 from marshmallow import Schema, fields, post_dump
-from app.routes.api.models.user import User
-from app.utils import hash_string
-from flask import url_for
+from app.utils import hash_password
 
 
 class UserSchema(Schema):
@@ -36,4 +34,4 @@ class UserSchema(Schema):
         return data
 
     def load_password(self, pw):
-        return hash_string(pw)
+        return hash_password(pw)

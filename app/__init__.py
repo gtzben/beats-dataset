@@ -16,6 +16,7 @@ from configparser import ConfigParser, ExtendedInterpolation
 from app.routes.api import api_bp
 from app.routes.web import web_bp
 
+from cryptography.fernet import Fernet
 
 from app.routes.api.resources.token import black_list
 
@@ -29,11 +30,22 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     app = Flask(__name__)
 
     for conf in list(config[section]):
-        if conf == 'sqlalchemy_database_uri':
+        if conf in ['sqlalchemy_database_uri', 'encrypt_email_key']:
             print(eval(config[section][conf]))
             app.config[conf.upper()] = eval(config[section][conf])
         else:
             app.config[conf.upper()] = config[section][conf]
+
+
+    test_email = "begutierrezse@outlook.com"
+
+    # Create the Fernet cipher_suite using the key
+    cipher_suite = Fernet(app.config['ENCRYPT_EMAIL_KEY'])
+    encrypted_email = cipher_suite.encrypt(test_email.encode('utf-8')).decode('utf-8')
+    decrypted_email = cipher_suite.decrypt(encrypted_email.encode('utf-8')).decode('utf-8')
+
+    print(f"Original email: {test_email} | Encrypted email: {encrypted_email} | Decrypted email: {decrypted_email}")
+
 
 
     # Register the blueprint
@@ -48,19 +60,26 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
 
 
 class RequestFormatter(logging.Formatter):
+    """
+    
+    """
     def format(self, record):
         record.url = request.url
         record.remote_addr = request.remote_addr
+        record.method = request.method
         return super(RequestFormatter, self).format(record)
     
 
 def __config_logger(app):
+    """
+    
+    """
 
     app.logger.handlers.clear()
 
     api_formatter = RequestFormatter(
-        '[%(asctime)s.%(msecs)d] - %(remote_addr)s requested %(url)s - %(levelname)s - [%(name)s - %(pathname)s:%(lineno)d] - %(message)s',
-        datefmt='%d/%m/%Y %H:%M:%S'
+        '[%(asctime)s.%(msecs)03d] - %(remote_addr)s requested %(method)-4s %(url)s - %(levelname)s - [%(name)s - %(pathname)s:%(lineno)d] - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
         )
     
     file_handler = logging.FileHandler("data/logs/app.log")
