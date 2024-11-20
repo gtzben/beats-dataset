@@ -95,9 +95,11 @@ class ParticipantResource(Resource):
             token = generate_token(participant_email, salt='verify')
 
             subject = 'Please, confirm your registration to participte in the BEATS study.'
+            title = "Verify Your Account"
             greetings = 'Dear Participant,'
             thank_you = 'Thank you for joining this data collection study. Your participation is crucial for advancing our research in music and its impact on well-being.'
             next_steps = 'To complete your registration and begin the data collection process, please confirm your email by clicking the button below:'
+            button = "Confirm Your Email"
             link = url_for('api.participantverifyresource',
                         token=token,
                         _external=True)
@@ -105,11 +107,13 @@ class ParticipantResource(Resource):
             #
             send_email(participant_email,
                        subject,
-                       'email_verification.html',
+                       'email_template.html',
                        participant.pid,
+                       title=title,
                        greetings=greetings,
                        thank_you=thank_you,
                        next_steps=next_steps,
+                       button=button,
                        link=link)
 
             participant_created = ParticipantSchema().dump(participant)

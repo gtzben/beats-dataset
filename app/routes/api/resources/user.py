@@ -89,9 +89,12 @@ class UserResource(Resource):
 
         #
         subject = 'Please, confirm your registration to start using the BEATS API'
+        title = "Verify Your Email"
         greetings = 'Dear Collaborator,'
         thank_you = 'Welcome, and thank you for contributing to the BEATS dataset.'
         next_steps = 'To complete your registration and access the platform, please confirm your email by clicking the button below:'
+        button = "Confirm Your Email"
+
         link = url_for('api.userverifyresource',
                        token=token,
                        _external=True)
@@ -99,10 +102,12 @@ class UserResource(Resource):
         #
         send_email(user.email,
                    subject,
-                   'email_verification.html',
+                   'email_template.html',
+                   title=title,
                    greetings=greetings,
                    thank_you=thank_you,
                    next_steps=next_steps,
+                   button = "Confirm Your Email",
                    link=link)
 
         user_created = UserSchema().dump(user)

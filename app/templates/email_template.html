@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirm Your Registration</title>
+    <title>{{title}}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -77,7 +77,7 @@
     <!-- Header -->
     <div class="header">
         <img src="https://campuslife-browzer-platform.s3.eu-west-2.amazonaws.com/images/89b10a40d1011fdd420af5a178e0e77f" alt="UofG Logo" class="logo">
-        <h1>Verify Your Account</h1>
+        <h1>{{title}}</h1>
     </div>
 
     <!-- Main Content -->
@@ -85,7 +85,7 @@
         <p>{{greetings}}</p>
         <p>{{thank_you}}</p>
         <p>{{next_steps}}</p>
-        <a href="{{ link }}" class="cta-button">Confirm Your Email</a>
+        <a href="{{ link }}" class="cta-button">{{button}}</a>
         <p>If the button doesn’t work, copy and paste the following link into your browser:</p>
         <p><a href="{{ link }}" style="color: #003865;">{{ link }}</a></p>
     </div>

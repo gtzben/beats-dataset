@@ -7,7 +7,7 @@ Date: 2024-11-18
 
 from flask import Blueprint
 from flask_restful import Api
-from app.routes.api.resources import user, token, participant, device
+from app.routes.api.resources import user, token, participant, device, spotify
 
 # Create a blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -28,6 +28,11 @@ api.add_resource(participant.ParticipantVerifyResource, f'/participants/verify/<
 
 # Device related resources
 api.add_resource(device.DeviceResource, '/devices', '/devices/<string:device_serial>')
+
+# Spotify related resources
+api.add_resource(spotify.SpotifyResource, '/spotify')
+# api.add_resource(spotify.SpotifyRedirectResource, '/spotify/callback')
+
 
 # Session login resources
 api.add_resource(token.LoginResource, f'/login')

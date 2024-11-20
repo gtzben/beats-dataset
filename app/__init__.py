@@ -11,6 +11,7 @@ import os, logging
 from flask import Flask, request
 from flask_migrate import Migrate
 from app.extensions import db, jwt, mail
+from app.scheduled_jobs.player_state_monitoring import monitor_playback_state
 from configparser import ConfigParser, ExtendedInterpolation
 
 from app.routes.api import api_bp
@@ -24,29 +25,18 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     """
     
     """
+    
     config  = ConfigParser(interpolation=ExtendedInterpolation())
     config.read(config_file)
 
     app = Flask(__name__)
 
+    #
     for conf in list(config[section]):
         if conf in ['sqlalchemy_database_uri', 'encrypt_email_key']:
-            print(eval(config[section][conf]))
-            app.config[conf.upper()] = eval(config[section][conf])
+            app.config[conf.upper()] = eval(config[section][conf]) # requires os
         else:
             app.config[conf.upper()] = config[section][conf]
-
-
-    test_email = "begutierrezse@outlook.com"
-
-    # Create the Fernet cipher_suite using the key
-    cipher_suite = Fernet(app.config['ENCRYPT_EMAIL_KEY'])
-    encrypted_email = cipher_suite.encrypt(test_email.encode('utf-8')).decode('utf-8')
-    decrypted_email = cipher_suite.decrypt(encrypted_email.encode('utf-8')).decode('utf-8')
-
-    print(f"Original email: {test_email} | Encrypted email: {encrypted_email} | Decrypted email: {decrypted_email}")
-
-
 
     # Register the blueprint
     app.register_blueprint(api_bp)
@@ -55,6 +45,10 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     #
     __config_logger(app)
     __register_extensions(app)
+
+    #
+    app.cli.add_command(monitor_playback_state)
+
 
     return app
 

@@ -26,6 +26,7 @@ class Participant(db.Model):
     user_id = db.Column(db.Integer,db.ForeignKey('user.id'), nullable=False)
     
     device = db.relationship('Device', backref='participant')
+    spotify_account = db.relationship('SpotifyAccount', backref="participant")
 
     @classmethod
     def get_all_participants(cls, only_active=False):

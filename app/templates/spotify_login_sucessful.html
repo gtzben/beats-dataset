@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Login Successful</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+
+        .header {
+            background-color: #000000;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header img {
+            max-width: 120px;
+            margin-bottom: 10px;
+        }
+
+        .container {
+            text-align: center;
+            padding: 50px 20px;
+            background-color: white;
+            margin: 20px auto;
+            max-width: 600px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        h1 {
+            color: #1DB954;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 18px;
+            margin: 0;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg" alt="Spotify Logo">
+        <h1>Spotify Login Successful</h1>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1>Hi {{display_name}}, you're all set!</h1>
+        <p>Your Spotify account has been successfully connected.</p>
+        <p>The system will now monitor playback activity as part of the study.</p>
+        <p>You can safely close this tab.</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        &copy; 2024 The BEATS Dataset. All rights reserved.
+    </div>
+</body>
+</html>
