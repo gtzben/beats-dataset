@@ -11,13 +11,14 @@ class Device(db.Model):
     __tablename__='device'
 
     id = db.Column(db.Integer, primary_key=True)
-    participant_id = db.Column(db.Integer,db.ForeignKey('participant.id'), default=None)
     user_id = db.Column(db.Integer,db.ForeignKey('user.id'), nullable=False)
     device_name = db.Column(db.String(50), nullable=False)
     serial_number = db.Column(db.String(50), nullable=False, unique=True)
     measurement_location = db.Column(db.String(50), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
+
+    participant = db.relationship('Participant', backref='device')
 
     @classmethod
     def get_all_devices(cls):

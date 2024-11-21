@@ -24,9 +24,12 @@ class Participant(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
     user_id = db.Column(db.Integer,db.ForeignKey('user.id'), nullable=False)
-    
-    device = db.relationship('Device', backref='participant')
-    spotify_account = db.relationship('SpotifyAccount', backref="participant")
+    spotify_account = db.Column(db.String(200),db.ForeignKey('spotifyaccount.account_email'), nullable=True)
+    device_serial = db.Column(db.String(200),db.ForeignKey('device.serial_number'), nullable=True)
+
+    musiclistening = db.relationship('MusicListening', backref='participant')
+
+
 
     @classmethod
     def get_all_participants(cls, only_active=False):
@@ -48,6 +51,14 @@ class Participant(db.Model):
     @classmethod
     def get_by_pid(cls, pid):
         return cls.query.filter_by(pid=pid).first()
+    
+    @classmethod
+    def get_by_linked_device(cls, serial_number):
+        return cls.query.filter_by(device_serial=serial_number).first()
+    
+    @classmethod
+    def get_by_linked_spotify(cls, account_email):
+        return cls.query.filter_by(spotify_account=account_email).first()
     
     @classmethod
     def get_by_email_hash(cls,email_hash):

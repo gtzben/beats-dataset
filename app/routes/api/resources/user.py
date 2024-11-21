@@ -88,7 +88,7 @@ class UserResource(Resource):
         token = generate_token(user.email, salt='verify')
 
         #
-        subject = 'Please, confirm your registration to start using the BEATS API'
+        subject = 'BEATS Study - Please, confirm your registration to start using the BEATS API'
         title = "Verify Your Email"
         greetings = 'Dear Collaborator,'
         thank_you = 'Welcome, and thank you for contributing to the BEATS dataset.'

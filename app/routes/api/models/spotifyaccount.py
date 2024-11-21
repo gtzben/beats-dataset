@@ -12,19 +12,20 @@ class SpotifyAccount(db.Model):
     TODO
 
     """
-    __tablename__='spotifyaccounts'
+    __tablename__='spotifyaccount'
 
     id = db.Column(db.Integer,primary_key=True)# Numeric id
-    participant_id = db.Column(db.Integer,db.ForeignKey('participant.id'), default=None)
-    email = db.Column(db.String(200), nullable=False, unique=True)
+    account_email = db.Column(db.String(200), nullable=False, unique=True)
     uri = db.Column(db.String(50), nullable=False, unique=True)
     cache_path = db.Column(db.String(100), nullable=False, unique=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
 
+    participant = db.relationship('Participant', backref='spotifyaccount')
+
     @classmethod
     def get_by_email(cls, email):
-        return cls.query.filter_by(email=email).first()
+        return cls.query.filter_by(account_email=email).first()
 
 
     def save(self):

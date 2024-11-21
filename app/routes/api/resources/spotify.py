@@ -14,7 +14,7 @@ from flask import current_app, redirect, url_for, request, session, render_templ
 
 from flask_restful import Resource
 
-from app.routes.api.models.spotify import SpotifyAccount
+from app.routes.api.models.spotifyaccount import SpotifyAccount
 
 class SpotifyResource(Resource):
     """
@@ -67,7 +67,7 @@ class SpotifyResource(Resource):
 
         self.logger.debug(f"{spotify.me()['email']} has login successuly to Spotify")
 
-        data = {"email": spotify.me()["email"],
+        data = {"account_email": spotify.me()["email"],
                 "uri": spotify.me()["uri"],
                 "cache_path": cache_path}
         

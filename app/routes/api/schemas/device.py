@@ -21,7 +21,7 @@ class DeviceSchema(Schema):
     serial_number = fields.String(required=True)
     measurement_location = fields.String(required=True)
     user_id = fields.Integer(dump_only=True)
-    dog_id = fields.Integer(dump_only=True)
+    participant_id = fields.Integer(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 

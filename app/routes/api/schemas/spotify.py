@@ -16,8 +16,8 @@ class SpotifyAccountSchema(Schema):
         ordered = True
 
     id = fields.Int(dump_only=True)
-    participant_id = fields.Integer(dump_only=True)
-    email = fields.Email(dump_only=True)
+    participant_pid = fields.Integer(dump_only=True)
+    account_email = fields.Email(dump_only=True)
     cache_path = fields.String(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
