@@ -8,7 +8,7 @@ import spotipy
 import os, sys, logging, click
 
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import errno, fcntl
 
@@ -136,75 +136,149 @@ def __check_activity(sp, sleep_time, email, participant_pid):
 
     # Format milliseconds to minutes, seconds and remaining milliseconds for logger 
     # ms_to_min_sec = lambda ms: f"{ms // 60000}:{(ms % 60000 // 1000):02}"
-    ms_to_min_sec = lambda ms: f"{ms // 60000}:{(ms % 60000 // 1000):02}.{(ms % 1000):03}"
-
-
-    activity_detected = False
+    # ms_to_min_sec = lambda ms: f"{ms // 60000}:{(ms % 60000 // 1000):02}.{(ms % 1000):03}"
+    ms_to_hh_mm_ss = lambda ms: f"{(ms // 3600000):02}:{(ms % 3600000 // 60000):02}:{(ms % 60000 // 1000):02}.{(ms % 1000):03}"
 
     # Check account playback state
     user_playback_state = __get_playback_state(sp)
 
+    # Terminate if no activity
+    if user_playback_state is None:
+        LOGGER.debug("No activity detected")
+        sys.exit (-1)
+        
+    # Terminate if music is not being listened
+    content_type = user_playback_state.get("currently_playing_type", None)
+    if content_type != "track":
+        LOGGER.debug(f"Participant {participant_pid} is listening `{content_type}` rather than music. Terminating programme.")
+        sys.exit (-1)
+
+    # Define some required variables for first iteration
+    current_track_uri = user_playback_state.get("item", dict()).get("uri", None)
+    started_at =  datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0)
+    ended_at = datetime.fromtimestamp(time.time()) 
+    n_session_tracks = 0
+    track_ongoing = False
+    record_id = None
+
+    # Get session id if there are previous record. Otherwise, set as first session
+    last_record = MusicListening.get_participant_last_record(participant_pid)
+    if last_record:
+        session_id = last_record.listening_session_id + 1
+    else:
+        session_id = 1
+
+    #
     while user_playback_state is not None:
 
-        # Extract only relevant information.
-        # Plan workaround to handle instances when other type of 
-        # content is listent using the provided account
-        data = {
-            "account_email":email,
-            "participant_pid":participant_pid,
-            "track_name": user_playback_state.get("item", dict()).get("name", None),
-            "track_uri": user_playback_state.get("item", dict()).get("uri", None),
-            "device_type": user_playback_state["device"]["type"],
-            "device_id": user_playback_state["device"].get("id", None),
-            "device_volume": user_playback_state["device"]["volume_percent"],
-            "shuffle_state": user_playback_state["shuffle_state"],
-            "smart_shuffle": user_playback_state["smart_shuffle"],
-            "repeat_state": user_playback_state["repeat_state"],
-            "last_playback_change": user_playback_state["timestamp"],
-            "context_uri": user_playback_state.get("context", dict()).get("uri", None),
-            "progress_track_ms": user_playback_state.get("progress_ms", None),
-            "is_playing": user_playback_state["is_playing"],
-            "created_at":datetime.fromtimestamp(time.time())
+        # Set times it not paused
+        if user_playback_state["is_playing"]:
+            started_at =  datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0) # Last playback change (transition track)
+            if n_session_tracks == 1:
+                ended_at = datetime.fromtimestamp(time.time())  # if first track in session, set end to current time
+            elif n_session_tracks>1:
+                delta_progress = timedelta(milliseconds=int(user_playback_state.get("progress_ms", None) or 0))
+                ended_at = datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0) + delta_progress # add progress to started at
 
-        }
+        # If track is ongoing, update. Otherwise create a new record.
+        if track_ongoing:
 
-        #
-        music_listening = MusicListening(**data)
-        music_listening.save()
+            data = {
+                "playback_inconsistency": True if datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0) != music_listening.started_at else False,
+                "device_volume": user_playback_state["device"]["volume_percent"],
+                "shuffle_state": user_playback_state["shuffle_state"],
+                "smart_shuffle": user_playback_state["smart_shuffle"],
+                "repeat_state": user_playback_state["repeat_state"],
+                "progress_track_ms": user_playback_state.get("progress_ms", None),
+                "elapsed_time_ms": int((ended_at - started_at).total_seconds() * 1000),
+                "last_playback_change_ms": user_playback_state["timestamp"],
+                "monitored_at": datetime.fromtimestamp(time.time()),
+                "ended_at": ended_at
+            }
 
+            music_listening = MusicListening.get_by_id(record_id=record_id)
+            music_listening.update(data)
+
+        else:
+            n_session_tracks+=1
+
+            data = {
+                "participant_pid":participant_pid,
+                "listening_session_id": session_id,
+                "track_session_id": n_session_tracks,
+                "account_email":email,
+                "track_name": user_playback_state.get("item", dict()).get("name", None),
+                "track_uri": current_track_uri,
+                "device_type": user_playback_state["device"]["type"],
+                "device_id": user_playback_state["device"].get("id", None),
+                "device_volume": user_playback_state["device"]["volume_percent"],
+                "shuffle_state": user_playback_state["shuffle_state"],
+                "smart_shuffle": user_playback_state["smart_shuffle"],
+                "repeat_state": user_playback_state["repeat_state"],
+                "context_uri": user_playback_state.get("context", dict()).get("uri", None),
+                "duration_ms": user_playback_state.get('item', dict()).get('duration_ms', None),
+                "progress_track_ms": user_playback_state.get("progress_ms", None),
+                "elapsed_time_ms": int((ended_at - started_at).total_seconds() * 1000),
+                "last_playback_change_ms": user_playback_state["timestamp"],
+                "monitored_at": datetime.fromtimestamp(time.time()) ,
+                "started_at": started_at,
+                "ended_at": ended_at
+            }
+            
+            music_listening = MusicListening(**data)
+            music_listening.save()
 
         # Format message for logger
-        log_msg = (
-                    f"| Spotify Account: {email} | "
+        log_msg = ( f"| ID track monitor: {music_listening.id} | "
+                    f"Spotify Account: {email} | "
                     f"Participant pid: {participant_pid} | "
-                    f"Song: {data['track_name']} | "
-                    f"Context: {STUDY_PLAYLISTS.get(data['context_uri'], 'Other')} | "
-                    f"Device: {data['device_type']} | "
-                    f"Progress Track: {ms_to_min_sec(data['progress_track_ms'])} | "
-                    f"Progress ms: {data['progress_track_ms']} | "
-                    f"Last Playback Change: {datetime.fromtimestamp(user_playback_state['timestamp']/1000)} | " 
-                    f"Currently Playing: {data['is_playing']} |"
+                    f"Session id: {session_id} | "
+                    f"Track session id: {n_session_tracks} | "
+                    f"Song: {user_playback_state.get('item', dict()).get('name', None)} | "
+                    f"Context: {STUDY_PLAYLISTS.get(user_playback_state.get('context', dict()).get('uri', None), 'Other')} | "
+                    f"Device type: {user_playback_state['device']['type']} | "
+                    f"Progress track time: {ms_to_hh_mm_ss(user_playback_state.get('progress_ms', None))} | "
+                    f"Progress ms: {user_playback_state.get('progress_ms', None)} | "
+                    f"Track duration ms:  {user_playback_state.get('item', dict()).get('duration_ms', None)} | "
+                    f"Last playback change: {datetime.fromtimestamp(user_playback_state['timestamp']/1000)} | " 
+                    f"Currently playing: {user_playback_state['is_playing']} |"
                 )
         
         LOGGER.info(log_msg)
 
-        activity_detected = True
-
+        # Sleep to avoid surpasing quota
         time.sleep(sleep_time)
+        
+        # Handle updating or creating new records
         user_playback_state = __get_playback_state(sp)
+        if user_playback_state:
+            if current_track_uri != user_playback_state.get("item", dict()).get("uri", None):
+                current_track_uri = user_playback_state.get("item", dict()).get("uri", None)
+                music_listening.ended_at = datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0)
+                music_listening.elapsed_time_ms = int((music_listening.ended_at - music_listening.started_at).total_seconds() * 1000)
+                music_listening.save()
+                track_ongoing = False
+            else:
+                track_ongoing = True
+                record_id = music_listening.id
 
-    return activity_detected
+    current_session = MusicListening.get_by_pid_session_id(participant_pid, session_id)
+    session_total_ms = sum(record.elapsed_time_ms for record in current_session)
+
+    LOGGER.info(f"Participant {participant_pid} listened to {n_session_tracks} songs lasting {ms_to_hh_mm_ss(session_total_ms)} in total for session {session_id}")
+
+    return session_id, n_session_tracks, session_total_ms
 
 @with_appcontext
-def __send_survey(participant_pid, account_email):
+def __send_survey(participant_pid, session_id, account_email):
     """
     TODO replace account email with participant's email
       to which the Spotify account was assigned.
     """
 
     subject = 'BEATS Study - Please answer a quick survey!'
-    title = "Music Activity Survey"
-    greetings = 'Dear Participant,'
+    title = f"Music Activity Survey - Session {session_id}"
+    greetings = f'Dear Participant {participant_pid},'
     thank_you = ''
     next_steps = 'We noticed you recently listened to some music. Please take a moment to answer a few questions about your experience by clicking the button below:'
     button = "Take the Survey"
@@ -234,7 +308,10 @@ def __send_survey(participant_pid, account_email):
 @click.command()
 @click.argument('spotify_email', nargs=1)
 @click.option('--sleep_time', default=30, help='Seconds to sleep between calls')
-def monitor_playback_state(spotify_email,sleep_time):
+@click.option('--th_songs', default=10, help='Number of songs to send survey')
+@click.option('--th_minutes', default=30, help='Number of minutes to send survey')
+@click.option("--send_email", is_flag=True, show_default=True, default=True, help="Send email survey after concluding a musical episode.")
+def monitor_playback_state(spotify_email,sleep_time,send_email, th_songs, th_minutes):
     """
     Monitor playback state
     """
@@ -262,13 +339,13 @@ def monitor_playback_state(spotify_email,sleep_time):
     participant_pid, participant_email = __validate_account_assignment(spotify_email)
 
     #
-    activity_detected = __check_activity(spotify_client, sleep_time, spotify_email, participant_pid)
+    session_id, n_session_tracks, session_time_ms = __check_activity(spotify_client, sleep_time, spotify_email, participant_pid)
 
     #
-    if activity_detected:
-        __send_survey(participant_pid, participant_email)
+    if send_email and ((n_session_tracks>=th_songs) or (session_time_ms>= th_minutes * 6e4)):
+        __send_survey(participant_pid, session_id, participant_email)
     else:
-        LOGGER.debug("No activity detected")
+        LOGGER.info("Activity detected but survey not sent.")
 
     return
     
