@@ -17,6 +17,9 @@ from app.routes.api.schemas.link import LinkSchema
 
 from app.routes.api.models.user import User
 from app.routes.api.models.participant import Participant
+from app.routes.api.models.device import Device
+from app.routes.api.models.spotifyaccount import SpotifyAccount
+
 
 from app.utils import generate_token, verify_token, send_email, encrypt_email, hash_email
 
@@ -160,6 +163,7 @@ class ParticipantVerifyResource(Resource):
             return {'message': 'The participant profile is already verified'}, HTTPStatus.BAD_REQUEST
 
         participant.is_verified = True
+        participant.is_active = True
         participant.save()
 
         self.logger.debug(f"Participant {participant.pid} has been verified!")
@@ -199,16 +203,38 @@ class ParticipantLinkResources(Resource):
                 return {'message': "Verification of the participant's e-mail address is still pending."}, HTTPStatus.BAD_REQUEST
 
             if data.get('serial_number'):
-                if Participant.get_by_linked_device(serial_number=data.get('serial_number')):
+                # if Participant.get_by_linked_device(serial_number=data.get('serial_number')):
+                device = Device.get_by_serial(serial=data.get('serial_number'))
+                if device is None:
+                    return {'message': f"The device {data.get('serial_number')} is not in the DB"}, HTTPStatus.BAD_REQUEST
+
+                if device.is_assigned:
                     return {'message': f"The device {data.get('serial_number')} has already being assigned"}, HTTPStatus.BAD_REQUEST
+                
                 participant.device_serial = data.get('serial_number')
                 participant.save()
+                device.is_assigned = True
+                device.save()
 
             if data.get('account_email'):
-                if Participant.get_by_linked_spotify(account_email=data.get('account_email')):
+                # if Participant.get_by_linked_device(serial_number=data.get('serial_number')):
+                spotify_account = SpotifyAccount.get_by_email(email=data.get('account_email'))
+                if spotify_account is None:
+                    return {'message': f"The account {data.get('account_email')} is not in the DB"}, HTTPStatus.BAD_REQUEST
+
+                if spotify_account.is_assigned:
                     return {'message': f"The account {data.get('account_email')} has already being assigned"}, HTTPStatus.BAD_REQUEST
+                
                 participant.spotify_account = data.get('account_email')
                 participant.save()
+                spotify_account.is_assigned = True
+                spotify_account.save()
+
+            # if data.get('account_email'):
+            #     if Participant.get_by_linked_spotify(account_email=data.get('account_email')):
+            #         return {'message': f"The account {data.get('account_email')} has already being assigned"}, HTTPStatus.BAD_REQUEST
+            #     participant.spotify_account = data.get('account_email')
+            #     participant.save()
 
             self.logger.info(f"Device {participant.device_serial} and account {participant.spotify_account} are linked to participant {participant_pid}.")
 
@@ -243,14 +269,22 @@ class ParticipantUnlinkResources(Resource):
             if not participant.is_verified:
                 return {'message': "Verification of the participant's e-mail address is still pending."}, HTTPStatus.BAD_REQUEST
 
-            if participant.is_active:
-                return {'message': "Unable to unlink resoruces since participant is still active."}, HTTPStatus.BAD_REQUEST
+            if not participant.is_active:
+                return {'message': "Unable to unlink resources since participant has already finished data collection"}, HTTPStatus.BAD_REQUEST
+            
+            if participant.device_serial is not None:
+                device = Device.get_by_serial(serial=participant.device_serial)
+                device.is_assigned = False
+                device.save()
+                participant.device_serial = None
+                participant.save()
 
-            participant.device_serial = None
-            participant.save()
-
-            participant.spotify_account = None
-            participant.save()
+            if participant.spotify_account is not None:
+                spotify_account = SpotifyAccount.get_by_email(email=participant.spotify_account )
+                spotify_account.is_assigned = False
+                spotify_account.save()
+                participant.spotify_account = None
+                participant.save()
 
             self.logger.info(f"Participant {participant_pid} is no longer assigned an account and a device")
 
@@ -285,7 +319,7 @@ class ParticipantActiveResource(Resource):
             if participant is None:
                 return {'message': 'Participant not found in DB'}, HTTPStatus.NOT_FOUND
 
-            if (not participant.is_active) and (participant.device_serial is None or participant.spotify_account is None):
+            if (participant.is_active) and (participant.device_serial is None or participant.spotify_account is None):
                 return {'message':'There is no device or spotify account linked to this participant.'}, HTTPStatus.CONFLICT
 
             participant.is_active = not participant.is_active         

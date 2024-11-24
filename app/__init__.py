@@ -33,7 +33,7 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
 
     #
     for conf in list(config[section]):
-        if conf in ['sqlalchemy_database_uri', 'encrypt_email_key']:
+        if conf in ['sqlalchemy_database_uri', 'encrypt_email_key', 'study_playlists']:
             app.config[conf.upper()] = eval(config[section][conf]) # requires os
         else:
             app.config[conf.upper()] = config[section][conf]

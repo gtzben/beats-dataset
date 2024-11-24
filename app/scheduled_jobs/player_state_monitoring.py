@@ -26,13 +26,6 @@ from flask.cli import with_appcontext
 #
 LOGGER =logging.getLogger("scheduled_monitoring")
 
-# Preselected playlist for study
-STUDY_PLAYLISTS = {"spotify:playlist:37i9dQZF1DX3PFzdbtx1Us": "Cognitive",
-                   "spotify:playlist:37i9dQZF1DX1s9knjP51Oa": "Affective",
-                   "spotify:playlist:37i9dQZF1DWZqd5JICZI0u": "Eudaimonic",
-                   "spotify:playlist:37i9dQZF1DX8NTLI2TtZa6": "Goal-Attainment"}
-
-
 
 def __setup_logger(email_log, dir_path):
     """
@@ -235,11 +228,12 @@ def __check_activity(sp, sleep_time, email, participant_pid):
                     f"Session id: {session_id} | "
                     f"Track session id: {n_session_tracks} | "
                     f"Song: {user_playback_state.get('item', dict()).get('name', None)} | "
-                    f"Context: {STUDY_PLAYLISTS.get(user_playback_state.get('context', dict()).get('uri', None), 'Other')} | "
+                    f"Context: {current_app.config['STUDY_PLAYLISTS'].get(user_playback_state.get('context', dict()).get('uri', None), 'Other')} | "
                     f"Device type: {user_playback_state['device']['type']} | "
+                    f"Track duration ms:  {user_playback_state.get('item', dict()).get('duration_ms', None)} | "
                     f"Progress track time: {ms_to_hh_mm_ss(user_playback_state.get('progress_ms', None))} | "
                     f"Progress ms: {user_playback_state.get('progress_ms', None)} | "
-                    f"Track duration ms:  {user_playback_state.get('item', dict()).get('duration_ms', None)} | "
+                    f"Progress %: {user_playback_state.get('progress_ms', None)/user_playback_state.get('item', dict()).get('duration_ms', None):.2%} | "
                     f"Last playback change: {datetime.fromtimestamp(user_playback_state['timestamp']/1000)} | " 
                     f"Currently playing: {user_playback_state['is_playing']} |"
                 )

@@ -15,6 +15,7 @@ class Device(db.Model):
     device_name = db.Column(db.String(50), nullable=False)
     serial_number = db.Column(db.String(50), nullable=False, unique=True)
     measurement_location = db.Column(db.String(50), nullable=False)
+    is_assigned = db.Column(db.Boolean(), default=False) 
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
 

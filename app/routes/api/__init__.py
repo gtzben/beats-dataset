@@ -32,7 +32,7 @@ api.add_resource(participant.ParticipantActiveResource, '/participants/<string:p
 api.add_resource(device.DeviceResource, '/devices', '/devices/<string:device_serial>')
 
 # Spotify related resources
-api.add_resource(spotify.SpotifyResource, '/spotify')
+api.add_resource(spotify.SpotifyLogin, '/spotify')
 # api.add_resource(spotify.SpotifyRedirectResource, '/spotify/callback')
 
 

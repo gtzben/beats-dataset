@@ -18,6 +18,7 @@ class SpotifyAccount(db.Model):
     account_email = db.Column(db.String(200), nullable=False, unique=True)
     uri = db.Column(db.String(50), nullable=False, unique=True)
     cache_path = db.Column(db.String(100), nullable=False, unique=True)
+    is_assigned = db.Column(db.Boolean(), default=False) 
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
 

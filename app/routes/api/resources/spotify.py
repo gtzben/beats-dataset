@@ -16,7 +16,7 @@ from flask_restful import Resource
 
 from app.routes.api.models.spotifyaccount import SpotifyAccount
 
-class SpotifyResource(Resource):
+class SpotifyLogin(Resource):
     """
     
     """
@@ -46,13 +46,13 @@ class SpotifyResource(Resource):
                                                    client_secret=current_app.config["SPOTIPY_CLIENT_SECRET"],
                                                    scope=scope,
                                                    cache_handler=cache_handler,
-                                                   redirect_uri=url_for("api.spotifyresource", _external=True),
+                                                   redirect_uri=url_for("api.spotifylogin", _external=True),
                                                    show_dialog=True)
 
         if request.args.get("code"):
             # Step 2. Being redirected from Spotify auth page
             auth_manager.get_access_token(request.args.get("code"))
-            return redirect(url_for("api.spotifyresource", _external=False))
+            return redirect(url_for("api.spotifylogin", _external=False))
 
         if not auth_manager.validate_token(cache_handler.get_cached_token()):
             # Step 1. Redirect to sign in when no token

@@ -25,7 +25,7 @@ class Participant(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
     user_id = db.Column(db.Integer,db.ForeignKey('user.id'), nullable=False)
     spotify_account = db.Column(db.String(200),db.ForeignKey('spotifyaccount.account_email'), nullable=True)
-    device_serial = db.Column(db.String(200),db.ForeignKey('device.serial_number'), nullable=True)
+    device_serial = db.Column(db.String(200),db.ForeignKey('device.serial_number'), nullable=True, unique=False)
 
     musiclistening = db.relationship('MusicListening', backref='participant')
 

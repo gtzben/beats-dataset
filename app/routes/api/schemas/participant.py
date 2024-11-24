@@ -9,6 +9,7 @@ from marshmallow import Schema, fields, validates, post_dump,  ValidationError
 from app.routes.api.schemas.user import UserSchema
 from app.routes.api.schemas.device import DeviceSchema
 from app.routes.api.schemas.spotify import SpotifyAccountSchema
+from app.routes.api.schemas.music import MusicListeningSchema
 
 
 
@@ -32,6 +33,7 @@ class ParticipantSchema(Schema):
     user = fields.Nested(UserSchema, attribute='user', dump_only=True, only=['email','institution'])
     device = fields.Nested(DeviceSchema, attribute='device', dump_only=True, only=['device_name','serial_number', "measurement_location"])
     spotify = fields.Nested(SpotifyAccountSchema, attribute='spotifyaccount', dump_only=True, only=['account_email','cache_path'])
+    music_listening = fields.Nested(MusicListeningSchema, attribute='musiclistening', many=True, dump_only=True, only=['id','track_uri', 'context', 'started_at', 'ended_at'])
 
 
     @post_dump(pass_many=True)
@@ -42,8 +44,10 @@ class ParticipantSchema(Schema):
 
 
     @validates('ndh')
-    def validate_ndh(self,value):
-        if len(value)>1:
-            raise ValidationError("Non-dominant hand must be a one charachter value, L or R.")
-        if value not in ['L', 'R']:
-            raise ValidationError("Non-dominant hand must be L for Left or R for Right.")
+    def validate_ndh(self, value):
+        # Normalize value to lowercase for comparison
+        normalized_value = value.strip().lower()
+        
+        # Check if the input matches either "left" or "right"
+        if normalized_value not in ['left', 'right']:
+            raise ValidationError("Non-dominant hand must be 'left' or 'right'.")
