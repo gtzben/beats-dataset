@@ -1,0 +1,27 @@
+
+    <h1>Associate Resources</h1>
+    <form action="{{ url_for('portal.associate_resources', _external=True ) }}" method="post" novalidate>
+        {{ association_form.hidden_tag() }}
+        <p>
+            {{ association_form.participants.label }}<br>
+            {{ association_form.participants }}<br>
+            {% for error in association_form.participants.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ association_form.devices.label }}<br>
+            {{ association_form.devices }}<br>
+            {% for error in association_form.devices.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ association_form.spotify_accounts.label }}<br>
+            {{ association_form.spotify_accounts }}<br>
+            {% for error in association_form.spotify_accounts.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ association_form.submit() }}</p>
+    </form>

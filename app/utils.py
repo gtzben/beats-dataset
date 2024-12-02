@@ -6,6 +6,7 @@ Date: 2024-11-18
 """
 
 import bcrypt, hmac, hashlib
+from threading import Thread
 from cryptography.fernet import Fernet
 
 from itsdangerous import URLSafeTimedSerializer
@@ -78,22 +79,32 @@ def verify_token(token, max_age=(60 * 60), salt=None):
     return email
 
 
+def send_async_email(app, msg):
+    with app.app_context():  # Push the app context
+        try:
+            mail.send(msg)
+        except Exception as e:
+            app.logger.exception(f"Error while sending email asynchronously: {e}")
+
+
 def send_email(to, subject, html, participant=None, **kwargs):
     """
     
     """
 
     try:
+        app = current_app._get_current_object()  # Get the actual app instance
         msg = Message(subject,
                       recipients=[to],
                       html=render_template(html, **kwargs)
                       )
-        
-        mail.send(msg)
+
+        Thread(target=send_async_email, args=(app, msg)).start()
+
         if participant:
             current_app.logger.debug(f"Email '{subject}' sent to {participant}!")
         else:
             current_app.logger.debug(f"Email '{subject}' sent to {to}!")
 
     except Exception as e:
-        current_app.logger.exception(f"Error while sending the email '{subject}' to {to}")
+        current_app.logger.exception(f"Error while sending the email '{subject}' to {to}: {e}")

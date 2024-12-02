@@ -32,11 +32,16 @@ class Participant(db.Model):
 
 
     @classmethod
-    def get_all_participants(cls, only_active=False):
-        if only_active:
-            return cls.query.filter_by(is_active=only_active).all()
-        else:
-            return cls.query.all()
+    def get_all_participants(cls, is_active=None, is_verified=None):
+        query = cls.query
+
+        if is_active is not None:
+            query = query.filter_by(is_active=is_active)
+
+        if is_verified is not None:
+            query = query.filter_by(is_verified=is_verified)
+
+        return query.all()
         
 
     @classmethod

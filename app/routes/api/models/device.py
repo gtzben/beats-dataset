@@ -22,8 +22,12 @@ class Device(db.Model):
     participant = db.relationship('Participant', backref='device')
 
     @classmethod
-    def get_all_devices(cls):
-        return cls.query.all()
+    def get_all_devices(cls, available_only=False):
+        if available_only:
+            return cls.query.filter_by(is_assigned=False).all()
+        else:
+            return cls.query.all()
+        
 
     @classmethod
     def get_by_id(cls, id):

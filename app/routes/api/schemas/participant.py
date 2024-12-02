@@ -51,3 +51,26 @@ class ParticipantSchema(Schema):
         # Check if the input matches either "left" or "right"
         if normalized_value not in ['left', 'right']:
             raise ValidationError("Non-dominant hand must be 'left' or 'right'.")
+
+class ParticipantFlatSchema(Schema):
+    """
+    TODO
+    """
+    class Meta:
+        ordered = True
+
+    id = fields.Int(dump_only=True)
+    pid = fields.String(dump_only=True)
+    device_serial = fields.String(dump_only=True)
+    spotify_account = fields.String(dump_only=True)
+    ndh = fields.String(dump_only=True)
+    is_active = fields.Boolean(dump_only=True)
+    is_verified = fields.Boolean(dump_only=True)
+    created_at = fields.DateTime(dump_only=True)
+    updated_at = fields.DateTime(dump_only=True)
+
+    @post_dump(pass_many=True)
+    def wrap(self, data, many, **karwgs):
+        if many:
+            return {'data': data}
+        return data

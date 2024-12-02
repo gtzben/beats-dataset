@@ -33,6 +33,7 @@ class DeviceResource(Resource):
         
         """
 
+
         current_user = User.get_by_id(id=get_jwt_identity())
 
         if current_user.is_superuser or current_user.is_admin:
@@ -40,15 +41,16 @@ class DeviceResource(Resource):
                 device = Device.get_by_serial(serial=device_serial)
 
                 if device is None:
-                    return {'message': 'User not found'}, HTTPStatus.NOT_FOUND
+                    return {'message': 'Device not found'}, HTTPStatus.NOT_FOUND
                 
                 data = DeviceSchema().dump(device)
 
             else:
-                all_devices = Device.get_all_devices()
+                only_available = request.args.get("available-only", default=False, type=bool)
+                all_devices = Device.get_all_devices(available_only=only_available)
                 data = DeviceSchema(many=True).dump(all_devices)
 
-            return data
+            return data, HTTPStatus.OK
         else:
             return {"message":"You are not allowed to see this information"}, HTTPStatus.FORBIDDEN
 

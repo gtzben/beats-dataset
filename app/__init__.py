@@ -6,16 +6,18 @@ Author: Benjamin Gutierrez Serafin
 Date: 2024-11-18
 """
 
-import os, logging
+import os, logging, datetime
 
 from flask import Flask, request
 from flask_migrate import Migrate
 from app.extensions import db, jwt, mail
 from app.scheduled_jobs.player_state_monitoring import monitor_playback_state
+from app.scheduled_jobs.daily_jobs import run_daily_jobs
 from configparser import ConfigParser, ExtendedInterpolation
 
 from app.routes.api import api_bp
-from app.routes.web import web_bp
+from app.routes.info import info_bp
+from app.routes.portal import portal_bp
 
 from cryptography.fernet import Fernet
 
@@ -29,18 +31,20 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     config  = ConfigParser(interpolation=ExtendedInterpolation())
     config.read(config_file)
 
-    app = Flask(__name__)
+    app = Flask(__name__, static_url_path="/static")
 
     #
     for conf in list(config[section]):
-        if conf in ['sqlalchemy_database_uri', 'encrypt_email_key', 'study_playlists']:
+        if conf in ['sqlalchemy_database_uri', 'encrypt_email_key', 'study_playlists', 'jwt_access_token_expires']:
             app.config[conf.upper()] = eval(config[section][conf]) # requires os
         else:
             app.config[conf.upper()] = config[section][conf]
 
     # Register the blueprint
     app.register_blueprint(api_bp)
-    app.register_blueprint(web_bp)
+    app.register_blueprint(info_bp)
+    app.register_blueprint(portal_bp)
+
 
     #
     __config_logger(app)
@@ -48,7 +52,7 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
 
     #
     app.cli.add_command(monitor_playback_state)
-
+    app.cli.add_command(run_daily_jobs)
 
     return app
 
@@ -100,6 +104,7 @@ def __register_extensions(app):
     db.init_app(app)
     migrate = Migrate(app, db)
     jwt.init_app(app)
+
 
     mail.init_app(app)
 

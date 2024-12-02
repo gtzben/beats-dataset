@@ -10,11 +10,17 @@ import uuid
 import spotipy
 
 from http import HTTPStatus
-from flask import current_app, redirect, url_for, request, session, render_template, make_response
+from flask import current_app, redirect, url_for, request, session, flash
 
 from flask_restful import Resource
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.routes.api.models.spotifyaccount import SpotifyAccount
+from app.routes.api.models.user import User
+
+from app.routes.api.schemas.spotify import SpotifyAccountSchema
+
+cache_dir = os.path.join(os.path.abspath("."),"data", "cache")
 
 class SpotifyLogin(Resource):
     """
@@ -37,7 +43,7 @@ class SpotifyLogin(Resource):
 
         scope = "user-read-playback-state user-read-email"
 
-        cache_path = os.path.join(os.path.abspath("."),"data", "cache", f".cache-{session['uuid']}")
+        cache_path = os.path.join(cache_dir, f".cache-{session['uuid']}")
         cache_handler = spotipy.cache_handler.CacheFileHandler(cache_path=cache_path)
 
         self.logger.debug(cache_path)
@@ -74,6 +80,44 @@ class SpotifyLogin(Resource):
         spotify_account = SpotifyAccount(**data)
         spotify_account.save()
 
-        return (make_response(render_template('spotify_login_sucessful.html', display_name=spotify.me()["display_name"]),
-                               HTTPStatus.OK, {'Content-Type': 'text/html'}))
+        flash(f"Successfully connected spotify account: {spotify.me()['email']}", "success")
+
+        session.pop('uuid', default=None)
+
+        return redirect(url_for('portal.dashboard'))
+    
+
+class SpotifyAccountsResource(Resource):
+    """
+    
+    """
+
+    def __init__(self, **kwargs):
+        self.logger = current_app.logger
+
+    @jwt_required()
+    def get(self, account_id=None, only_available=False):
+        """
+        
+        """
+
+        current_user = User.get_by_id(id=get_jwt_identity())
+
+        if current_user.is_superuser or current_user.is_admin:
+            if account_id:
+                account = SpotifyAccount.get_by_id(id=account_id)
+
+                if account is None:
+                    return {'message': 'User not found'}, HTTPStatus.NOT_FOUND
+                
+                data = SpotifyAccountSchema(exclude=["cache_path"])().dump(account)
+
+            else:
+                only_available = request.args.get("available-only", default=False, type=bool)
+                all_accounts = SpotifyAccount.get_all_accounts(available_only=only_available)
+                data = SpotifyAccountSchema(many=True, exclude=["cache_path"]).dump(all_accounts)
+
+            return data
+        else:
+            return {"message":"You are not allowed to see this information"}, HTTPStatus.FORBIDDEN
     

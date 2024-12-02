@@ -42,8 +42,16 @@ class User(db.Model):
             return cls.query.filter_by(email=email, deleted=show_deleted).first()
         
     @classmethod
-    def get_all_users(cls):
-        return cls.query.all()
+    def get_all_users(cls, is_active=None, is_verified=None):
+        query = cls.query
+
+        if is_active is not None:
+            query = query.filter_by(is_active=is_active)
+
+        if is_verified is not None:
+            query = query.filter_by(is_verified=is_verified)
+
+        return query.all()
 
     @classmethod
     def get_not_verified(cls):

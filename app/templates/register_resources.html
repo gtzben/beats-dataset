@@ -1,0 +1,63 @@
+<h1>Register Resources</h1>
+
+<div style="display: flex; justify-content: space-between; gap: 20px;">
+    <!-- Participant Registration Form -->
+    <div style="flex: 1; border: 1px solid #ccc; padding: 15px; border-radius: 5px;">
+        <h2>Register Participant</h2>
+        <form action="{{ url_for('portal.register_resources', _external=True ) }}" method="post" novalidate>
+            {{ participant_form.hidden_tag() }}
+            <p>
+                {{ participant_form.pid.label }}<br>
+                {{ participant_form.pid(size=32) }}<br>
+                {% for error in participant_form.pid.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ participant_form.email.label }}<br>
+                {{ participant_form.email(size=32) }}<br>
+                {% for error in participant_form.email.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ participant_form.ndh.label }}<br>
+                {{ participant_form.ndh(size=32) }}<br>
+                {% for error in participant_form.ndh.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>{{ participant_form.submit() }}</p>
+        </form>
+    </div>
+
+    <!-- Device Registration Form -->
+    <div style="flex: 1; border: 1px solid #ccc; padding: 15px; border-radius: 5px;">
+        <h2>Register Device</h2>
+        <form action="{{ url_for('portal.register_resources', _external=True) }}" method="post" novalidate>
+            {{ device_form.hidden_tag() }}
+            <p>
+                {{ device_form.device_name.label }}<br>
+                {{ device_form.device_name(size=32) }}<br>
+                {% for error in device_form.device_name.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ device_form.serial_number.label }}<br>
+                {{ device_form.serial_number(size=32) }}<br>
+                {% for error in device_form.serial_number.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ device_form.measurement_location.label }}<br>
+                {{ device_form.measurement_location(size=32) }}<br>
+                {% for error in device_form.measurement_location.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>{{ device_form.submit() }}</p>
+        </form>
+    </div>
+</div>

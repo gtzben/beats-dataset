@@ -18,6 +18,9 @@ from flask_jwt_extended import (create_access_token,
 from app.utils import check_password
 from app.routes.api.models.user import User
 
+# revoked tokens are stored in memory at the moment
+# in case the app reboots, revoked valid tokens
+# can have access to protected endpoints
 black_list = set()
 
 class LoginResource(Resource):
@@ -56,7 +59,7 @@ class RefreshResource(Resource):
 
         token = create_access_token(identity=current_user,fresh=False)
 
-        return {'token':token}, HTTPStatus.OK
+        return {'access_token': token}, HTTPStatus.OK
 
 
 class LogoutResource(Resource):

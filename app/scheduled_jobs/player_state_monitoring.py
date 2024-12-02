@@ -25,7 +25,10 @@ from flask.cli import with_appcontext
 
 #
 LOGGER =logging.getLogger("scheduled_monitoring")
-
+STUDY_SURVEYS = {"Goal-Attainment":"https://uofg.qualtrics.com/jfe/form/SV_elX4ThXOhQqTxpY",
+                 "Eudaimonic":"https://uofg.qualtrics.com/jfe/form/SV_a4PrvrXb3arVwp0",
+                 "Affective":"https://uofg.qualtrics.com/jfe/form/SV_0HQk0nbMczLUpGm",
+                 "Other":"https://uofg.qualtrics.com/jfe/form/SV_cLLHmjnWd3G0wXI"}
 
 def __setup_logger(email_log, dir_path):
     """
@@ -122,14 +125,12 @@ def __get_playback_state(sp):
 
 
 @with_appcontext
-def __check_activity(sp, sleep_time, email, participant_pid):
+def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01):
     """
     
     """
 
     # Format milliseconds to minutes, seconds and remaining milliseconds for logger 
-    # ms_to_min_sec = lambda ms: f"{ms // 60000}:{(ms % 60000 // 1000):02}"
-    # ms_to_min_sec = lambda ms: f"{ms // 60000}:{(ms % 60000 // 1000):02}.{(ms % 1000):03}"
     ms_to_hh_mm_ss = lambda ms: f"{(ms // 3600000):02}:{(ms % 3600000 // 60000):02}:{(ms % 60000 // 1000):02}.{(ms % 1000):03}"
 
     # Check account playback state
@@ -150,6 +151,7 @@ def __check_activity(sp, sleep_time, email, participant_pid):
     current_track_uri = user_playback_state.get("item", dict()).get("uri", None)
     started_at =  datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0)
     ended_at = datetime.fromtimestamp(time.time()) 
+    context_counter = {}
     n_session_tracks = 0
     track_ongoing = False
     record_id = None
@@ -193,23 +195,35 @@ def __check_activity(sp, sleep_time, email, participant_pid):
             music_listening.update(data)
 
         else:
-            n_session_tracks+=1
+            
+            #
+            track_name = user_playback_state.get("item", dict()).get("name", None)
+            track_duration_ms = user_playback_state.get('item', dict()).get('duration_ms', None)
+            device_type = user_playback_state["device"]["type"]
+            
+            #
+            current_context = user_playback_state.get("context", dict())
+            context_uri = None if current_context is None else current_context.get("uri", None)
+            context_cat = current_app.config['STUDY_PLAYLISTS'].get(context_uri, 'Other')
+            context_counter[context_cat]= context_counter.get(context_cat,0)+1
+            n_session_tracks = sum(context_counter.values())
+            
 
             data = {
                 "participant_pid":participant_pid,
                 "listening_session_id": session_id,
                 "track_session_id": n_session_tracks,
                 "account_email":email,
-                "track_name": user_playback_state.get("item", dict()).get("name", None),
+                "track_name": track_name,
                 "track_uri": current_track_uri,
-                "device_type": user_playback_state["device"]["type"],
+                "device_type": device_type,
                 "device_id": user_playback_state["device"].get("id", None),
                 "device_volume": user_playback_state["device"]["volume_percent"],
                 "shuffle_state": user_playback_state["shuffle_state"],
                 "smart_shuffle": user_playback_state["smart_shuffle"],
                 "repeat_state": user_playback_state["repeat_state"],
-                "context_uri": user_playback_state.get("context", dict()).get("uri", None),
-                "duration_ms": user_playback_state.get('item', dict()).get('duration_ms', None),
+                "context_uri": context_uri,
+                "duration_ms": track_duration_ms,
                 "progress_track_ms": user_playback_state.get("progress_ms", None),
                 "elapsed_time_ms": int((ended_at - started_at).total_seconds() * 1000),
                 "last_playback_change_ms": user_playback_state["timestamp"],
@@ -227,13 +241,13 @@ def __check_activity(sp, sleep_time, email, participant_pid):
                     f"Participant pid: {participant_pid} | "
                     f"Session id: {session_id} | "
                     f"Track session id: {n_session_tracks} | "
-                    f"Song: {user_playback_state.get('item', dict()).get('name', None)} | "
-                    f"Context: {current_app.config['STUDY_PLAYLISTS'].get(user_playback_state.get('context', dict()).get('uri', None), 'Other')} | "
-                    f"Device type: {user_playback_state['device']['type']} | "
-                    f"Track duration ms:  {user_playback_state.get('item', dict()).get('duration_ms', None)} | "
+                    f"Song: {track_name} | "
+                    f"Context: {context_cat} | "
+                    f"Device type: {device_type} | "
+                    f"Track duration ms:  {track_duration_ms} | "
                     f"Progress track time: {ms_to_hh_mm_ss(user_playback_state.get('progress_ms', None))} | "
                     f"Progress ms: {user_playback_state.get('progress_ms', None)} | "
-                    f"Progress %: {user_playback_state.get('progress_ms', None)/user_playback_state.get('item', dict()).get('duration_ms', None):.2%} | "
+                    f"Progress %: {user_playback_state.get('progress_ms', None)/track_duration_ms:.2%} | "
                     f"Last playback change: {datetime.fromtimestamp(user_playback_state['timestamp']/1000)} | " 
                     f"Currently playing: {user_playback_state['is_playing']} |"
                 )
@@ -250,33 +264,48 @@ def __check_activity(sp, sleep_time, email, participant_pid):
                 current_track_uri = user_playback_state.get("item", dict()).get("uri", None)
                 music_listening.ended_at = datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0)
                 music_listening.elapsed_time_ms = int((music_listening.ended_at - music_listening.started_at).total_seconds() * 1000)
+
+                # Correct start time for fully listened to songs without playback inconsistencies
+                if not music_listening.playback_inconsistency:
+                    if 1-tolerance <= music_listening.elapsed_time_ms/music_listening.duration_ms <= 1+tolerance:
+                        music_listening.started_at = music_listening.ended_at - timedelta(milliseconds=music_listening.duration_ms)
+                    else:
+                        music_listening.playback_inconsistency = True # The next button was pressed
+
                 music_listening.save()
                 track_ongoing = False
             else:
                 track_ongoing = True
                 record_id = music_listening.id
 
+    #
     current_session = MusicListening.get_by_pid_session_id(participant_pid, session_id)
     session_total_ms = sum(record.elapsed_time_ms for record in current_session)
 
-    LOGGER.info(f"Participant {participant_pid} listened to {n_session_tracks} songs lasting {ms_to_hh_mm_ss(session_total_ms)} in total for session {session_id}")
+    #
+    proportion_contexts = {context: count / n_session_tracks for context, count in context_counter.items()}
+    dominant_context = max(proportion_contexts, key=proportion_contexts.get)
 
-    return session_id, n_session_tracks, session_total_ms
+    LOGGER.info(f"Participant {participant_pid} listened to {n_session_tracks} songs lasting {ms_to_hh_mm_ss(session_total_ms)} in total for session {session_id}"+
+                f", with the dominant context being {dominant_context}")
+
+    return session_id, n_session_tracks, session_total_ms, dominant_context
 
 @with_appcontext
-def __send_survey(participant_pid, session_id, account_email):
+def __send_survey(participant_pid, session_id, account_email, dominant_context):
     """
     TODO replace account email with participant's email
       to which the Spotify account was assigned.
     """
 
     subject = 'BEATS Study - Please answer a quick survey!'
-    title = f"Music Activity Survey - Session {session_id}"
+    survey_type = "Music Activity Survey" if dominant_context=="Other" else f"{dominant_context} Music Survey"
+    title = f"{survey_type} - Session {session_id}"
     greetings = f'Dear Participant {participant_pid},'
     thank_you = ''
     next_steps = 'We noticed you recently listened to some music. Please take a moment to answer a few questions about your experience by clicking the button below:'
     button = "Take the Survey"
-    link = "https://uofg.qualtrics.com/jfe/form/SV_0HQk0nbMczLUpGm"
+    link = STUDY_SURVEYS[dominant_context] + f"?PID={participant_pid}&Session={session_id}"
 
     with mail.connect() as conn:
         subject = subject
@@ -292,11 +321,10 @@ def __send_survey(participant_pid, session_id, account_email):
 
         try:
             conn.send(msg)
-            LOGGER.info(f"Survey sent to participant {participant_pid}")
+            LOGGER.info(f"{survey_type} sent to participant {participant_pid}")
         except Exception:
             LOGGER.exception(f"Unable to send email to {participant_pid}")
             sys.exit (-1)
-
 
 
 @click.command()
@@ -333,11 +361,11 @@ def monitor_playback_state(spotify_email,sleep_time,send_email, th_songs, th_min
     participant_pid, participant_email = __validate_account_assignment(spotify_email)
 
     #
-    session_id, n_session_tracks, session_time_ms = __check_activity(spotify_client, sleep_time, spotify_email, participant_pid)
+    session_id, n_session_tracks, session_time_ms, dominant_context = __check_activity(spotify_client, sleep_time, spotify_email, participant_pid)
 
     #
     if send_email and ((n_session_tracks>=th_songs) or (session_time_ms>= th_minutes * 6e4)):
-        __send_survey(participant_pid, session_id, participant_email)
+        __send_survey(participant_pid, session_id, participant_email, dominant_context)
     else:
         LOGGER.info("Activity detected but survey not sent.")
 

@@ -25,6 +25,17 @@ class SpotifyAccount(db.Model):
     participant = db.relationship('Participant', backref='spotifyaccount')
 
     @classmethod
+    def get_all_accounts(cls, available_only=False):
+        if available_only:
+            return cls.query.filter_by(is_assigned=False).all()
+        else:
+            return cls.query.all()
+
+    @classmethod
+    def get_by_id(cls, account_id):
+        return cls.query.filter_by(id=account_id).first()
+
+    @classmethod
     def get_by_email(cls, email):
         return cls.query.filter_by(account_email=email).first()
 

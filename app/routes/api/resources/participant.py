@@ -12,7 +12,7 @@ from flask_restful import Resource
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from marshmallow import ValidationError
-from app.routes.api.schemas.participant import ParticipantSchema
+from app.routes.api.schemas.participant import ParticipantSchema, ParticipantFlatSchema
 from app.routes.api.schemas.link import LinkSchema
 
 from app.routes.api.models.user import User
@@ -57,7 +57,7 @@ class ParticipantResource(Resource):
                 all_participants = Participant.get_all_participants()
                 data = ParticipantSchema(many=True).dump(all_participants)
 
-            return data
+            return data, HTTPStatus.OK
         else:
             return {"message":"You are not allowed to see this information"}, HTTPStatus.FORBIDDEN
             
@@ -128,6 +128,46 @@ class ParticipantResource(Resource):
         
         else:
             return {"message":"You are not allowed to sign up participants"}, HTTPStatus.FORBIDDEN
+        
+
+class ParticipantPortal(Resource):
+
+    """
+    TODO
+    
+    """
+
+    def __init__(self, **kwargs):
+        self.logger = current_app.logger
+
+
+    @jwt_required()
+    def get(self, participant_pid=None):
+
+        """
+        TODO
+
+        """
+        current_user = User.get_by_id(id=get_jwt_identity())
+
+        if current_user.is_superuser or current_user.is_admin:
+            if participant_pid:
+                participant = Participant.get_by_pid(pid=participant_pid)
+
+                if participant is None:
+                    return {'message': 'Participant not found'}, HTTPStatus.NOT_FOUND
+                
+                data = ParticipantFlatSchema().dump(participant)
+
+            else:
+                is_active = request.args.get("is-active", default=None, type=bool)
+                is_verified = request.args.get("is-verified", default=None, type=bool)
+                all_participants = Participant.get_all_participants(is_active=is_active, is_verified=is_verified)
+                data = ParticipantFlatSchema(many=True).dump(all_participants)
+
+            return data, HTTPStatus.OK
+        else:
+            return {"message":"You are not allowed to see this information"}, HTTPStatus.FORBIDDEN
         
 
 class ParticipantVerifyResource(Resource):
@@ -230,15 +270,10 @@ class ParticipantLinkResources(Resource):
                 spotify_account.is_assigned = True
                 spotify_account.save()
 
-            # if data.get('account_email'):
-            #     if Participant.get_by_linked_spotify(account_email=data.get('account_email')):
-            #         return {'message': f"The account {data.get('account_email')} has already being assigned"}, HTTPStatus.BAD_REQUEST
-            #     participant.spotify_account = data.get('account_email')
-            #     participant.save()
 
             self.logger.info(f"Device {participant.device_serial} and account {participant.spotify_account} are linked to participant {participant_pid}.")
 
-            return {"message": "Device association to participant was successful"}, HTTPStatus.OK    
+            return {"message": f"Device association to participant {participant_pid} was successful"}, HTTPStatus.OK    
 
         else:
             return {"message":"You are not allowed to associate resources to participants"}, HTTPStatus.FORBIDDEN

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar" style="width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;">
+        <h5>Available Options</h5>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active dash-content" href="{{ url_for('portal.register_resources', _external=False) }}" id="register-resources">Register Resources</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link dash-content" href="{{ url_for('portal.view_resources', _external=False) }}" id="view-resources">View Resources</a>
+            </li>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link dash-content" href="{{ url_for('portal.associate_resources', _external=False) }}" id="associate-resources">Associate Resources</a>
+            </li>
+        </ul>
+        <hr>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="{{ url_for('portal.connect_spotify', _external=True) }}">Connect Spotify</a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content" style="flex-grow: 1; padding: 20px;">
+        <h1>Welcome to the Dashboard</h1>
+        <p>Select an option from the sidebar to get started.</p>
+    </div>
+</div>
+
+<script>
+    // Handle sidebar navigation clicks
+    document.querySelectorAll('.dash-content').forEach(link => {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            fetchContent(this.href);
+        });
+    });
+
+    async function fetchContent(endpoint) {
+        const response = await fetch(endpoint);
+        const content = await response.text();
+        document.querySelector('.content').innerHTML = content;
+    }
+    
+</script>
+{% endblock %}
