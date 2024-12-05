@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% macro heading_row(headings) %}
+<tr>
+    {%for header in headings%}
+    <th class="text-center">{{ header }}</th>
+    {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro data_rows(data) %}
+{% for row in data %}
+<tr>
+    <td class="text-start" style="width:30%">{{ row[0] }}</td> <!-- Question label -->
+    {% for radio in row[1:] %}
+    <td class="text-center align-middle">
+        <label>
+            {{ radio }} <!-- Render the individual radio button -->
+        </label>
+    </td>
+    {% endfor %}
+</tr>
+{% endfor %}
+{% endmacro %}
+
+{% macro data_table(headings, data) %}
+<div class="table-responsive-sm">
+    <table class="table table-sm table-hover caption-top">
+        <caption>
+            <ul>
+                <li>{{subform_instructions[0]}}</li>
+                <li>{{subform_instructions[1]}}</li>
+            </ul>
+        </caption>
+        <thead class="table-secondary sticky-top top-0">
+            {{ heading_row(headings) }}
+        </thead>
+        <tbody class="table-group-divider">
+            {{ data_rows(data) }}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+
+<div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: auto;">
+
+    <form method="POST">
+        {{ form.csrf_token }}
+        {{ form.hidden_tag() }}
+
+        {% if current_page == 1 %}
+        <div style="max-width: 600px; margin: auto;">
+            <h2>Thank You {{session.survey_participant_pid}} for Your Participation!</h2>
+            <p>
+                We sincerely appreciate your contribution to this study. To proceed, we will activate your account.
+                Before doing so, please complete a few questionnaires.
+            </p>
+            <p>
+                Once the questionnaires are finished, your account will be activated, and the experimenter will assign a
+                Spotify account and a data collection instrument.
+            </p>
+            <p>Thank you for your cooperation!</p>
+        </div>
+
+        {% elif current_page == 2 %}
+        <h2>Ten-Item Personality Inventory-(TIPI)</h2>
+        {{ data_table(subform_headers, subform_values) }}
+
+        {% elif current_page == 3 %}
+        <h2>Positive and Negative Affect Schedule (PANAS-SF)</h2>
+        {{ data_table(subform_headers, subform_values) }}
+
+        {% elif current_page == 4 %}
+        <h2>Short Test Of Music Preferences - Revised (STOMP-R)</h2>
+        {{ data_table(subform_headers, subform_values) }}
+
+        {% elif current_page == 5 %}
+        <h2>The Goldsmiths Musical Sophistication Index</h2>
+        {{ data_table(subform_headers, subform_values) }}
+        <p>32.- I engaged in regular, daily practice of a musical instrument (including voice) {{ form.gms.gms_32() }}
+            for years.</p>
+        <p>33.- At the peak of my interest, I practiced {{ form.gms.gms_33() }} hours per day on my primary instrument.
+        </p>
+        <p>34.- I have attended {{ form.gms.gms_34()}} live music events as an audience member in the past twelve
+            months.</p>
+        <p>35.- I have had formal training in music theory {{ form.gms.gms_35()}} years.</p>
+        <p>36.- I have had {{ form.gms.gms_36()}} years of formal training on a musical instrument (including voice)
+            during my
+            lifetime.</p>
+        <p>37.- I can play {{ form.gms.gms_37()}} musical instruments.</p>
+        <p>38.- I listen attentively to music for {{ form.gms.gms_38()}} or more per day.</p>
+        <p>39.- The instrument I play best (including voice) is {{ form.gms.gms_39() }}</p>
+
+        {% elif current_page == 6 %}
+        <div style="max-width: 600px; margin: auto;">
+            <h2>Thank You {{session.survey_participant_pid}} for completing the questionnaires!</h2>
+            <p>Your responses have been recorded. The experimenter will now assign a data collection instrument and a
+                Spotify account. You may close this tab or log out.</p>
+        </div>
+
+        {% endif %}
+
+        <div>
+            {% if current_page != 6 %}
+            {% if current_page > 1 %}
+            <button type="submit" class="btn btn-secondary btn-lg" name="Back">Back</button>
+            {% endif %}
+            {% if current_page < 5 %} <button type="submit" class="btn btn-secondary btn-lg" name="Next">Next</button>
+                {% else %}
+                <button type="submit" class="btn btn-primary btn-lg" name="Submit">Submit</button>
+                {% endif %}
+                {% endif %}
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

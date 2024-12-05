@@ -10,6 +10,8 @@ from app.routes.api.schemas.user import UserSchema
 from app.routes.api.schemas.device import DeviceSchema
 from app.routes.api.schemas.spotify import SpotifyAccountSchema
 from app.routes.api.schemas.music import MusicListeningSchema
+from app.routes.api.models.survey import Questionnaire, Response
+from sqlalchemy.orm import joinedload
 
 
 
@@ -34,6 +36,7 @@ class ParticipantSchema(Schema):
     device = fields.Nested(DeviceSchema, attribute='device', dump_only=True, only=['device_name','serial_number', "measurement_location"])
     spotify = fields.Nested(SpotifyAccountSchema, attribute='spotifyaccount', dump_only=True, only=['account_email','cache_path'])
     music_listening = fields.Nested(MusicListeningSchema, attribute='musiclistening', many=True, dump_only=True, only=['id','track_uri', 'context', 'started_at', 'ended_at'])
+    questionnaires = fields.Method("get_questionnaire_responses", dump_only=True, attribute='questionnaires')
 
 
     @post_dump(pass_many=True)
@@ -41,6 +44,20 @@ class ParticipantSchema(Schema):
         if many:
             return {'data': data}
         return data
+    
+    def get_questionnaire_responses(self, obj):
+        """Retrieve and format questionnaire responses for the participant."""
+        questionnaires = Questionnaire.query.options(joinedload(Questionnaire.questions)).all()
+        responses = Response.query.filter_by(participant_pid=obj.pid).all()
+
+        # Group responses by questionnaire
+        grouped_responses = {q.name: {} for q in questionnaires}
+
+        for response in responses:
+            question = response.question
+            grouped_responses[question.questionnaire_name][f"{question.questionnaire_name}_{question.n_item}"] = response.response
+
+        return grouped_responses
 
 
     @validates('ndh')
@@ -51,6 +68,7 @@ class ParticipantSchema(Schema):
         # Check if the input matches either "left" or "right"
         if normalized_value not in ['left', 'right']:
             raise ValidationError("Non-dominant hand must be 'left' or 'right'.")
+
 
 class ParticipantFlatSchema(Schema):
     """

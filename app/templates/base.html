@@ -26,10 +26,10 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <div class="navbar-nav">
             <a class="nav-link active" aria-current="page" href="/">The BEATS Dataset</a>
-            {% if token is none %}
-            <a class="nav-link" aria-current="page" href="{{url_for('portal.login', _external=True)}}">Login</a>
+            {% if not logged_in %}
+            <a class="nav-link" aria-current="page" href="{{url_for(request.blueprint+'.login', _external=True)}}">Login</a>
             {% else %}
-            <a class="nav-link" aria-current="page" href="{{ url_for('portal.logout', _external=True) }}">Logout</a>
+            <a class="nav-link" aria-current="page" href="{{ url_for(request.blueprint+'.logout', _external=True) }}">Logout</a>
             {% endif %}
           </div>
         </div>

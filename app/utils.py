@@ -5,16 +5,20 @@ Author: Benjamin Gutierrez Serafin
 Date: 2024-11-18
 """
 
-import bcrypt, hmac, hashlib
+import bcrypt, hmac, hashlib, click
 from threading import Thread
 from cryptography.fernet import Fernet
 
 from itsdangerous import URLSafeTimedSerializer
 
 from flask import current_app, render_template
+from flask.cli import with_appcontext
 from flask_mail import Message
 
 from app.extensions import mail
+
+from app.extensions import db
+from app.routes.api.models.survey import Question, Questionnaire
 
 
 def hash_password(password):
@@ -108,3 +112,47 @@ def send_email(to, subject, html, participant=None, **kwargs):
 
     except Exception as e:
         current_app.logger.exception(f"Error while sending the email '{subject}' to {to}: {e}")
+
+
+def seed_data():
+    """Insert seed data into the database"""
+
+    surveys = [
+        {'name': 'tipi', 'description':'Ten-Item Personality Inventory', 'n_items':10},
+        {'name': 'panas', 'description':'Positive and Negative Affect Schedule', 'n_items':20},
+        {'name': 'stompr', 'description':'Short Test Of Music Preferences - Revised', 'n_items':23},
+        {'name': 'gms', 'description':'The Goldsmiths Musical Sophistication Index', 'n_items':39}
+    ]
+
+    for survey_data in surveys:
+        if not Questionnaire.query.filter_by(name=survey_data['name']).first():
+            questionnaire = Questionnaire(**survey_data)
+            questions = [Question(questionnaire_name=survey_data['name'], n_item=s+1) for s in range(survey_data['n_items'])]
+            
+            db.session.add(questionnaire)
+            db.session.bulk_save_objects(questions)
+    
+    db.session.commit()
+    print("Seed data inserted.")
+
+
+@click.command()
+@with_appcontext
+def reset_db():
+    """Resets the database and runs all migrations"""
+    
+    # Drop all tables (to reset)
+    db.drop_all()
+    print("Dropped all tables.")
+    
+    # Create all tables from the current models
+    db.create_all()
+    print("Created all tables.")
+    
+    # Seed the lookup tables
+    seed_data()
+
+    # Run migrations to apply changes (if any)
+    from flask_migrate import upgrade
+    upgrade()  # This applies any new migrations you might have
+    print("Applied migrations.")

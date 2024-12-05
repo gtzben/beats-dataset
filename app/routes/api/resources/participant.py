@@ -21,7 +21,7 @@ from app.routes.api.models.device import Device
 from app.routes.api.models.spotifyaccount import SpotifyAccount
 
 
-from app.utils import generate_token, verify_token, send_email, encrypt_email, hash_email
+from app.utils import generate_token, verify_token, send_email, encrypt_email, hash_email, decrypt_email
 
 
 class ParticipantResource(Resource):
@@ -100,7 +100,7 @@ class ParticipantResource(Resource):
 
             subject = 'BEATS Study - Please, confirm your registration to participte in this study.'
             title = "Verify Your Account"
-            greetings = 'Dear Participant,'
+            greetings = f'Dear Participant {participant.pid},'
             thank_you = 'Thank you for joining this data collection study. Your participation is crucial for advancing our research in music and its impact on well-being.'
             next_steps = 'To complete your registration and begin the data collection process, please confirm your email by clicking the button below:'
             button = "Confirm Your Email"
@@ -203,7 +203,6 @@ class ParticipantVerifyResource(Resource):
             return {'message': 'The participant profile is already verified'}, HTTPStatus.BAD_REQUEST
 
         participant.is_verified = True
-        participant.is_active = True
         participant.save()
 
         self.logger.debug(f"Participant {participant.pid} has been verified!")
@@ -242,6 +241,9 @@ class ParticipantLinkResources(Resource):
             if not participant.is_verified:
                 return {'message': "Verification of the participant's e-mail address is still pending."}, HTTPStatus.BAD_REQUEST
 
+            if not participant.is_active:
+                return {'message': "Participant must be active to assign resources"}, HTTPStatus.BAD_REQUEST
+
             if data.get('serial_number'):
                 # if Participant.get_by_linked_device(serial_number=data.get('serial_number')):
                 device = Device.get_by_serial(serial=data.get('serial_number'))
@@ -250,6 +252,11 @@ class ParticipantLinkResources(Resource):
 
                 if device.is_assigned:
                     return {'message': f"The device {data.get('serial_number')} has already being assigned"}, HTTPStatus.BAD_REQUEST
+                
+                if participant.device_serial:
+                    already_assigned_device = Device.get_by_serial(serial=participant.device_serial)
+                    already_assigned_device.is_assigned = False
+                    already_assigned_device.save()
                 
                 participant.device_serial = data.get('serial_number')
                 participant.save()
@@ -264,6 +271,11 @@ class ParticipantLinkResources(Resource):
 
                 if spotify_account.is_assigned:
                     return {'message': f"The account {data.get('account_email')} has already being assigned"}, HTTPStatus.BAD_REQUEST
+                
+                if participant.spotify_account:
+                    already_assigned_spotify = SpotifyAccount.get_by_email(email=participant.spotify_account)
+                    already_assigned_spotify.is_assigned = False
+                    already_assigned_spotify.save()
                 
                 participant.spotify_account = data.get('account_email')
                 participant.save()
@@ -365,5 +377,52 @@ class ParticipantActiveResource(Resource):
             return {'message': f'Participant {participant.pid} is now {participant.is_active}'}, HTTPStatus.OK
         else:
             return {'message':'You are not allowed to change this value'}, HTTPStatus.FORBIDDEN
+        
 
+class ParticipantLogin(Resource):
+
+    """
+    TODO
+    
+    """
+
+    def __init__(self, **kwargs):
+        self.logger = current_app.logger
+
+
+    def post(self):
+        """
+        
+        """
+
+        json_data = request.get_json()
+
+        try:
+            data = ParticipantSchema(only=('pid','email')).load(json_data)
+        except ValidationError as errors:
+            return {'message': 'Validation errors', 'errors': errors.messages}, HTTPStatus.BAD_REQUEST
+        
+        pid = data.get("pid")
+        email = data.get("email")
+
+        participant = Participant.get_by_pid(pid=pid)
+
+        if (participant is None) or (email != decrypt_email(participant.email_encrypted)):
+            return {'message':'PID or password is incorrect'}, HTTPStatus.UNAUTHORIZED
+        
+        if participant.is_verified is False:
+            return {'message': 'The participant account is not verified yet'}, HTTPStatus.FORBIDDEN
+
+        if participant.is_active:      
+            self.logger.debug(f"Participant {pid} has sign in for the post-study flow!")
+            return {"is_active":participant.is_active}, HTTPStatus.OK
+        else:
+            if participant.spotify_account == participant.device_serial == None:
+                self.logger.debug(f"Participant {pid} has sign in for the pre-study flow!")
+                return {"is_active":participant.is_active}, HTTPStatus.OK
+            else:
+                self.logger.warning(f"Participant {pid} tried to login once again after completing the participation period")
+                return {"message": "Participant has already concluded the experiment"}, HTTPStatus.CONFLICT
+
+                
         

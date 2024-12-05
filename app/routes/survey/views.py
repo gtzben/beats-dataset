@@ -1,7 +1,224 @@
-from flask import render_template
+"""
+
+------------------------
+Author: Benjamin Gutierrez Serafin
+Date: 2024-12-03
+"""
+import requests
+from functools import wraps
+from flask import render_template, flash, url_for, session, request, redirect
 from . import survey_bp
 
-@survey_bp.route('/')
-def main_page():
-    """Render the main landing page."""
-    return render_template('index.html')
+from http import HTTPStatus
+from app.routes.survey.forms import ParticipantLoginForm, BEATS_Psychometrics
+from wtforms import RadioField
+
+
+def clear_blueprint_session(namespace):
+    keys_to_clear = [key for key in session.keys() if key.startswith(namespace)]
+    for key in keys_to_clear:
+        session.pop(key)
+
+@survey_bp.route('/login', methods=["GET", "POST"])
+def login():
+
+    flash("Please enter your Participant ID (PID) and email to proceed.", "info")
+
+    form = ParticipantLoginForm()
+
+    if form.validate_on_submit():
+
+        session.pop('_flashes', None)
+
+        data = {
+        "pid": form.pid.data,
+        "email": form.email.data
+        }
+
+        # sending post request and saving response as response object
+        response = requests.post(url=url_for("api.participantlogin", _external=True), json=data)
+        api_data = response.json()
+
+        if response.status_code == HTTPStatus.OK:
+            # Save info in session
+            session[f'{request.blueprint}_participant_pid'] = data["pid"]
+            session[f'{request.blueprint}_is_active'] = api_data['is_active']
+            flash('Login successful!', 'success')
+
+            if api_data['is_active']:
+                return redirect(url_for('survey.post_study'))
+            else:
+                return redirect(url_for('survey.pre_study'))
+
+            
+        elif response.status_code in [HTTPStatus.UNAUTHORIZED,HTTPStatus.FORBIDDEN]:
+            flash(api_data["message"], 'danger')
+        else:
+            flash('An error occurred. Please try again later.', 'danger')
+
+    return render_template('login_participant.html', title='Participant Sign In', form=form, logged_in=bool(session.get(f'{request.blueprint}_participant_pid')))
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if f'{request.blueprint}_participant_pid' not in session:
+            flash("You must log in first.", "danger")
+            return redirect(url_for('survey.login'))  # Redirect to login if not authenticated
+        return f(*args, **kwargs)
+    return decorated_function
+
+@survey_bp.route('/logout')
+@login_required
+def logout():
+    clear_blueprint_session(request.blueprint)
+    flash('Logged out successfully.', 'success')
+    return redirect(url_for('survey.login'))
+
+
+@survey_bp.route('/pre-study', methods=["GET", "POST"])
+@login_required
+def pre_study():
+
+    
+
+    form = BEATS_Psychometrics()
+    total_pages = 5  # Number of pages in the form    
+
+    # Define a mapping of pages to subforms
+    page_config = {
+        2: {'subform': form.tipi, 'session_key': f'{request.blueprint}_tipi_data'},
+        3: {'subform': form.panas, 'session_key': f'{request.blueprint}_panas_data'},
+        4: {'subform': form.stompr, 'session_key': f'{request.blueprint}_stompr_data'},
+        5: {'subform': form.gms, 'session_key': f'{request.blueprint}_gms_data'}
+    }
+
+    table_headers = {f"{request.blueprint}_tipi_data": ["Statement", "Disagree strongly", "Disagree moderately", "Disagree a little",
+                                  "Neither agree nor disagree", "Agree a little", "Agree moderately",
+                                    "Agree strongly"],
+
+                    f"{request.blueprint}_panas_data": ["Statement", "Very slighlty or not at all", "A little", "Moderately", "Quite a bit", "Extremely"],
+
+                    f"{request.blueprint}_stompr_data":["Statement", "Dislikes strongly", "Dislike moderately", "Dislike a little", "Neither like or dislike",
+                                   "Like a little", "Like moderately", "Like strongly"],
+                    
+                    f"{request.blueprint}_gms_data":["Statement", "Completly disagree", "Strongly disagree", "Disagree", "Neither agree nor disagree",
+                                "Agree", "Strongly agree", "Completely agree"]}
+    
+    survey_instructions = {f"{request.blueprint}_tipi_data": ("Here are a number of personality traits that may or may not apply to you.",
+                                         "Select the option that best represents how much you agree or disagree with "+
+                                         "the statement (1 = strongly disagree, 7 = strongly agree)"),
+
+                    f"{request.blueprint}_panas_data": ("Review the list of feelings and emotions.",
+                                   "Choose the option that best describes the extent "
+                                    "to which you have felt each emotion in the past week (1 = very slightly or not at all, 5 = extremely)" ),
+
+                    f"{request.blueprint}_stompr_data":("Read each music genre or statement about preferences",
+                                   "Select how much you enjoy or agree with each (1 = strongly dislike, 7 = strongly like)."),
+                    
+                    f"{request.blueprint}_gms_data":("Answer each question about your musical habits, skills, and experiences.",
+                                "Use the provided scale to rate your response for each statement (1 = completly agree, 7 = completly disagree).")}
+
+
+
+    # Get current page from form data or default to the first page
+    current_page = int(form.current_page.data) if request.method == 'POST' else 1
+    if ('Back' in request.form):
+        for dict_values in page_config.values():
+            if dict_values["session_key"] in session:
+                for field_name, field_value in session[dict_values["session_key"]].items():
+                    getattr(dict_values["subform"], field_name).process(None, data=field_value)
+
+    
+    if request.method == 'POST':
+        # Validate only the current page's subform
+        if current_page in page_config:
+            subform = page_config[current_page]['subform']
+            session_key = page_config[current_page]['session_key']
+            
+            # Save valid data to session
+            session[session_key] = subform.data
+                
+        if form.errors:
+            # If there are errors, stay on the current page
+            return render_template('pre_study.html', title='Pre-study',current_page=current_page,
+                           form=form, subform_headers=subform_headers, subform_values=subform_values,
+                           subform_instructions=subform_instructions, 
+                           logged_in=bool(session.get(f'{request.blueprint}_participant_pid')))
+
+        # Handle page navigation
+        if 'Next' in request.form and current_page < total_pages:
+            current_page += 1
+        elif 'Back' in request.form and current_page > 1:
+            current_page -= 1
+        elif 'Submit' in request.form and current_page == total_pages:
+            # Process and handle form submission
+            collected_data = {key: session.get(key, {}) for key in [f'{request.blueprint}_tipi_data',
+                                                                    f'{request.blueprint}_panas_data',
+                                                                    f'{request.blueprint}_stompr_data',
+                                                                    f'{request.blueprint}_gms_data']}
+            for key in collected_data:
+                collected_data[key].pop('csrf_token', None)
+
+             # sending post request and saving response as response object
+            response = requests.post(url=url_for("api.surveyresponsesresource", _external=True,
+                                                  participant_pid=session.get(f'{request.blueprint}_participant_pid')), json=collected_data)
+            api_data = response.json()
+
+            if response.status_code == HTTPStatus.OK:
+                # Save tokens in the session
+                flash(api_data["message"], 'success')
+                current_page += 1 # Final - Submitted
+            elif response.status_code == HTTPStatus.BAD_REQUEST:
+                flash(api_data["message"], 'danger')
+            elif response.status_code == HTTPStatus.CONFLICT:
+                flash(api_data["message"], 'danger')
+                return redirect(url_for('survey.logout'))
+            else:
+                flash('An error occurred. Please try again later.', 'danger')
+
+
+        form.current_page.data = str(current_page)  # Update the current page
+
+    else:
+        # Initialize the form on the first GET request
+        form.current_page.data = "1"
+    
+    #
+    if ('Next' in request.form):
+        for dict_values in page_config.values():
+            if dict_values["session_key"] in session:
+                for field_name, field_value in session[dict_values["session_key"]].items():
+                    getattr(dict_values["subform"], field_name).process(None, data=field_value)
+
+    #
+    if current_page in page_config:
+        subform = page_config[current_page]['subform']
+        subform_values = []
+        for field_name, field_obj in subform._fields.items():  # Access subform fields
+            row = [field_obj.label.text] # Add label and field object
+            if not isinstance(field_obj, RadioField):
+                continue
+            if field_obj.label.text == "CSRF Token":
+                row.append(field_obj)
+            else:
+                radios = [o for o in field_obj]
+                row.extend(radios)
+                subform_values.append(row)
+
+        subform_headers = table_headers[page_config[current_page]["session_key"]]
+        subform_instructions = survey_instructions[page_config[current_page]["session_key"]]
+    else:
+        subform_values, subform_headers , subform_instructions = None, None, None
+
+
+    # Render only the fields for the current page
+    return render_template('pre_study.html', title='Pre-study', current_page=current_page,
+                           form=form, subform_headers=subform_headers, subform_values=subform_values,
+                           subform_instructions=subform_instructions, logged_in=bool(session.get(f'{request.blueprint}_participant_pid')))
+
+
+
+@survey_bp.route('/post-study')
+@login_required
+def post_study():
+    return render_template('post_study.html', title='Post-study', blueprint=request.blueprint, logged_in=bool(session.get(f'{request.blueprint}_participant_pid')))

@@ -332,7 +332,7 @@ def __send_survey(participant_pid, session_id, account_email, dominant_context):
 @click.option('--sleep_time', default=30, help='Seconds to sleep between calls')
 @click.option('--th_songs', default=10, help='Number of songs to send survey')
 @click.option('--th_minutes', default=30, help='Number of minutes to send survey')
-@click.option("--send_email", is_flag=True, show_default=True, default=True, help="Send email survey after concluding a musical episode.")
+@click.option("--send_email", is_flag=True, show_default=True, default=False, help="Send email survey after concluding a musical episode.")
 def monitor_playback_state(spotify_email,sleep_time,send_email, th_songs, th_minutes):
     """
     Monitor playback state

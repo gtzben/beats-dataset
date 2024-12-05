@@ -11,13 +11,16 @@ import os, logging, datetime
 from flask import Flask, request
 from flask_migrate import Migrate
 from app.extensions import db, jwt, mail
+from configparser import ConfigParser, ExtendedInterpolation
 from app.scheduled_jobs.player_state_monitoring import monitor_playback_state
 from app.scheduled_jobs.daily_jobs import run_daily_jobs
-from configparser import ConfigParser, ExtendedInterpolation
+from app.utils import reset_db
 
 from app.routes.api import api_bp
 from app.routes.info import info_bp
 from app.routes.portal import portal_bp
+from app.routes.survey import survey_bp
+
 
 from cryptography.fernet import Fernet
 
@@ -44,6 +47,7 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     app.register_blueprint(api_bp)
     app.register_blueprint(info_bp)
     app.register_blueprint(portal_bp)
+    app.register_blueprint(survey_bp)
 
 
     #
@@ -53,6 +57,7 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     #
     app.cli.add_command(monitor_playback_state)
     app.cli.add_command(run_daily_jobs)
+    app.cli.add_command(reset_db)
 
     return app
 

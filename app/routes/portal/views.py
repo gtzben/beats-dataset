@@ -1,4 +1,5 @@
 import os, uuid, spotipy, requests
+from functools import wraps
 from http import HTTPStatus
 from flask import render_template, redirect, url_for, flash, session, request
 from app.utils import verify_token
@@ -42,7 +43,7 @@ def login():
         else:
             flash('An error occurred. Please try again later.', 'danger')
 
-    return render_template('login_experimenter.html', title='Sign In', form=form, token=token)
+    return render_template('login_experimenter.html', title='Experimenter Sign In', form=form, logged_in=bool(session.get('access_token')))
 
 
 @portal_bp.route('/register',  methods=['GET', 'POST'])
@@ -72,7 +73,7 @@ def register():
         else:
             flash('An error occurred. Please try again later.', 'danger')
 
-    return render_template('register_experimenter.html', title='Experimenter Registration', form=form, token=None)
+    return render_template('register_experimenter.html', title='Experimenter Registration', form=form, logged_in=bool(session.get('access_token')))
 
 
 @portal_bp.route('/reset-password-request', methods=['GET', 'POST'])
@@ -100,7 +101,7 @@ def reset_password_request():
         else:
             flash('An error occurred. Please try again later.', 'danger')
 
-    return render_template('reset_password_request.html', title='Reset Password', form=form, token=token)
+    return render_template('reset_password_request.html', title='Reset Password', form=form, logged_in=bool(session.get('access_token')))
 
 
 @portal_bp.route('/reset-password/<reset_pwd_token>', methods=['GET', 'POST'])
@@ -129,45 +130,49 @@ def reset_password(reset_pwd_token):
         else:
             flash('An error occurred. Please try again later.', 'danger')
 
-    return render_template('reset_password.html', form=form, token=token)
+    return render_template('reset_password.html', form=form,  logged_in=bool(session.get('access_token')))
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'access_token' not in session:
+            flash("You must log in first.", "danger")
+            return redirect(url_for('portal.login'))  # Redirect to login if not authenticated
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @portal_bp.route('/logout')
+@login_required
 def logout():
-    if 'access_token' in session:
-        response = requests.post(
-            url_for("api.logoutresource", _external=True),
-            headers={"Authorization": f"Bearer {session['access_token']}"}
-        )
-        if response.status_code in [HTTPStatus.OK, HTTPStatus.UNAUTHORIZED]:
-            # Clear the session
-            session.clear()
-            flash('Logged out successfully.', 'success')
-            return redirect(url_for('portal.login'))
+    response = requests.post(
+        url_for("api.logoutresource", _external=True),
+        headers={"Authorization": f"Bearer {session['access_token']}"}
+    )
+    if response.status_code in [HTTPStatus.OK, HTTPStatus.UNAUTHORIZED]:
+        # Clear the session
+        session.pop('access_token', None)
+        session.pop('refresh_token', None)
+        flash('Logged out successfully.', 'success')
+        return redirect(url_for('portal.login'))
 
-        else:
-            flash('An error occurred during logout.', 'danger')
+    else:
+        flash('An error occurred during logout.', 'danger')
 
     return redirect(url_for('portal.dashboard'))
 
 
-@portal_bp.route('/dashboard',  methods=['GET', 'POST'])
+@portal_bp.route('/dashboard',  methods=['GET'])
+@login_required
 def dashboard():
     """
 
     """
-    # Retrieve the token from the session
-    token = session.get('access_token')
-    if not token:
-        flash("You must log in first.", "danger")
-        return redirect(url_for("portal.login"))
-
-    headers = {"Authorization": f"Bearer {token}"}
-
-    return render_template('dashboard_experimenter.html', title='Dashboard Experimenter', token=token)
+    return render_template('dashboard_experimenter.html', title='Dashboard Experimenter',  logged_in=bool(session.get('access_token')))
 
 
 @portal_bp.route('/register-resources', methods=['GET', 'POST'])
+@login_required
 def register_resources():
     """
 
@@ -232,6 +237,7 @@ def register_resources():
     )
 
 @portal_bp.route('/view-resources', methods=["GET"])
+@login_required
 def view_resources():
     # Fetch resources from the database
 
@@ -281,6 +287,7 @@ def view_resources():
 
 
 @portal_bp.route('/associate-resources', methods=['GET', 'POST'])
+@login_required
 def associate_resources():
     # Fetch participants, devices and accounts available for dropdowns
     participants_url = url_for("api.participantportal", _external=True) + "?is-verified=true&is-active=true"
@@ -356,6 +363,7 @@ def associate_resources():
 
 
 @portal_bp.route('/connect-spotify')
+@login_required
 def connect_spotify():
     return redirect(url_for('api.spotifylogin', _external=True))
 

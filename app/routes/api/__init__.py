@@ -7,7 +7,7 @@ Date: 2024-11-18
 
 from flask import Blueprint
 from flask_restful import Api
-from app.routes.api.resources import spotify, user, token, participant, device
+from app.routes.api.resources import spotify, user, token, participant, device, survey
 
 # Create a blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -31,6 +31,8 @@ api.add_resource(participant.ParticipantVerifyResource, '/participants/verify/<s
 api.add_resource(participant.ParticipantLinkResources, '/participants/<string:participant_pid>/link_resources')
 api.add_resource(participant.ParticipantUnlinkResources, '/participants/<string:participant_pid>/unlink_resources')
 api.add_resource(participant.ParticipantActiveResource, '/participants/<string:participant_pid>/status')
+api.add_resource(participant.ParticipantLogin, '/participants/login')
+
 
 # Device related resources
 api.add_resource(device.DeviceResource, '/devices', '/devices/<string:device_serial>')
@@ -38,6 +40,9 @@ api.add_resource(device.DeviceResource, '/devices', '/devices/<string:device_ser
 # Spotify related resources
 api.add_resource(spotify.SpotifyLogin, '/spotify')
 api.add_resource(spotify.SpotifyAccountsResource, 'spotify-accounts','/spotify-accounts/<int:account_id>')
+
+# Survey related resources
+api.add_resource(survey.SurveyResponsesResource, '/surveys', '/surveys/<string:participant_pid>')
 
 
 # Session login resources
