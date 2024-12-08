@@ -20,6 +20,7 @@ from app.routes.api import api_bp
 from app.routes.info import info_bp
 from app.routes.portal import portal_bp
 from app.routes.survey import survey_bp
+from app.routes.analytics.plots import create_dash_app
 
 
 from cryptography.fernet import Fernet
@@ -49,7 +50,6 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     app.register_blueprint(portal_bp)
     app.register_blueprint(survey_bp)
 
-
     #
     __config_logger(app)
     __register_extensions(app)
@@ -58,6 +58,8 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     app.cli.add_command(monitor_playback_state)
     app.cli.add_command(run_daily_jobs)
     app.cli.add_command(reset_db)
+
+    create_dash_app(app)
 
     return app
 

@@ -17,6 +17,8 @@ class MusicListeningSchema(Schema):
         ordered = True
 
     id = fields.Integer(dump_only=True)
+    participant_pid = fields.String(dump_only=True)
+    account_email = fields.String(dump_only=True)
     listening_session_id = fields.Integer(dump_only=True)
     track_session_id = fields.Integer(dump_only=True)
     track_uri = fields.String(dump_only=True)

@@ -29,6 +29,7 @@ class MusicListening(db.Model):
     smart_shuffle = db.Column(db.Boolean())
     repeat_state = db.Column(db.String(10))
     context_uri = db.Column(db.String(50))
+    # context_cat = db.Column(db.String(50))
     playback_inconsistency = db.Column(db.Boolean(), default=False) # change to playback inconsistency (brief pause, scrub, restart, etc)
     duration_ms = db.Column(db.Integer) # Song time duration in milliseconds
     elapsed_time_ms = db.Column(db.Integer) # Total time elapsed from start to end in milliseconds. May include playback inconsistencies. 
@@ -41,6 +42,10 @@ class MusicListening(db.Model):
     @classmethod
     def get_by_id(cls, record_id):
         return cls.query.filter_by(id=record_id).first()
+    
+    @classmethod
+    def get_all_songs(cls):
+        return cls.query.all()
     
     @classmethod
     def get_participant_last_record(cls, participant_pid):

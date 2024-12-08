@@ -35,7 +35,7 @@ class ParticipantSchema(Schema):
     user = fields.Nested(UserSchema, attribute='user', dump_only=True, only=['email','institution'])
     device = fields.Nested(DeviceSchema, attribute='device', dump_only=True, only=['device_name','serial_number', "measurement_location"])
     spotify = fields.Nested(SpotifyAccountSchema, attribute='spotifyaccount', dump_only=True, only=['account_email','cache_path'])
-    music_listening = fields.Nested(MusicListeningSchema, attribute='musiclistening', many=True, dump_only=True, only=['id','track_uri', 'context', 'started_at', 'ended_at'])
+    music_listening = fields.Nested(MusicListeningSchema, attribute='musiclistening', many=True, dump_only=True, only=['id','track_uri', 'playback_inconsistency','context', 'started_at', 'ended_at'])
     questionnaires = fields.Method("get_questionnaire_responses", dump_only=True, attribute='questionnaires')
 
 

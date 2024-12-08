@@ -223,6 +223,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01):
                 "smart_shuffle": user_playback_state["smart_shuffle"],
                 "repeat_state": user_playback_state["repeat_state"],
                 "context_uri": context_uri,
+                # "context_cat": context_cat,
                 "duration_ms": track_duration_ms,
                 "progress_track_ms": user_playback_state.get("progress_ms", None),
                 "elapsed_time_ms": int((ended_at - started_at).total_seconds() * 1000),
