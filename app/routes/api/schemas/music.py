@@ -21,9 +21,11 @@ class MusicListeningSchema(Schema):
     account_email = fields.String(dump_only=True)
     listening_session_id = fields.Integer(dump_only=True)
     track_session_id = fields.Integer(dump_only=True)
+    track_name = fields.String(dump_only=True)
     track_uri = fields.String(dump_only=True)
     context = fields.Method("get_uri_context")
     playback_inconsistency = fields.Boolean(dump_only=True)
+    offline_playback = fields.Boolean(dump_only=True)
     started_at = fields.DateTime(dump_only=True)
     ended_at = fields.DateTime(dump_only=True)
 

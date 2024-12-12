@@ -68,8 +68,8 @@ class SpotifyLogin(Resource):
         # Step 3. Signed in, display data
         spotify = spotipy.Spotify(auth_manager=auth_manager)
 
-        if SpotifyAccount.get_by_email(email=spotify.me()['email']):
-            return {'message': 'This account has already been connected'}, HTTPStatus.BAD_REQUEST
+        # if SpotifyAccount.get_by_email(email=spotify.me()['email']):
+        #     return {'message': 'This account has already been connected'}, HTTPStatus.BAD_REQUEST
 
         self.logger.debug(f"{spotify.me()['email']} has login successuly to Spotify")
 
@@ -77,8 +77,16 @@ class SpotifyLogin(Resource):
                 "uri": spotify.me()["uri"],
                 "cache_path": cache_path}
         
-        spotify_account = SpotifyAccount(**data)
-        spotify_account.save()
+        account_in_db = SpotifyAccount.get_by_email(email=spotify.me()['email'])
+
+        if account_in_db is None:
+            spotify_account = SpotifyAccount(**data)
+            spotify_account.save()
+        else:
+            account_in_db.cache_path = cache_path
+            account_in_db.save()
+            self.logger.warning(f"{spotify.me()['email']} already connected, updating cache path")
+
 
         flash(f"Successfully connected spotify account: {spotify.me()['email']}", "success")
 

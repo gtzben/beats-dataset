@@ -10,12 +10,14 @@ import dash_daq as daq
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
+import numpy as np
+import pandas as pd
+
 import plotly.express as px
 from plotly_calplot import calplot
 from plotly.colors import sequential
+import plotly.graph_objects as go
 
-
-import pandas as pd
 from app.routes.api.models.music import MusicListening
 from app.routes.api.schemas.music import MusicListeningSchema
 
@@ -59,13 +61,102 @@ def create_bar_chart(df):
 
     return barplot
 
+def create_radial_barchart(df, account, context):
+
+    # Step 1
+    df_hourly_counts = df.copy()
+    df_hourly_counts["hour"] = pd.to_datetime(df_hourly_counts["started_at"], format="ISO8601").dt.hour
+    df_hourly_counts["account_email"] = df_hourly_counts["account_email"].apply(lambda x: x.split("@")[0])
+    df_hourly_counts = df_hourly_counts.groupby(["hour", "account_email", "context"]).size().reset_index(name='n_tracks')
+    df_hourly_counts.set_index("hour", inplace=True)
+
+    # Step 2: Create a complete index of hours for each participant and context
+    accounts = df_hourly_counts["account_email"].unique()
+    contexts = df_hourly_counts["context"].unique()
+    all_hours = list(range(0,24))
+
+    # Step 4: Create a MultiIndex of all possible combinations
+    index = pd.MultiIndex.from_product(
+        [all_hours, accounts, contexts],
+        names=["hour", "account_email", "context"]
+    )
+
+    # Step 5: Reindex the dataset
+    df_hourly_counts = df_hourly_counts.reset_index().set_index(["hour", "account_email", "context"])
+    df_hourly_counts = df_hourly_counts.reindex(index, fill_value=0).reset_index()
+
+    # Step 6:
+    colour_mapping = {"Affective":"blues",
+                        "Eudaimonic":"oranges",
+                        "Goal-Attainment":"greens",
+                        "Other":"purples"}
+    if account == "All":
+        df_subset = (df_hourly_counts.groupby(["hour", "context"])[["n_tracks"]].sum()
+                    .query(f"context=='{context}'")
+                    .reset_index()
+                    .copy())
+    else:
+        df_subset = df_hourly_counts.query(f"account_email == '{account}' & context=='{context}'").copy()
+
+    r = df_subset['n_tracks'].tolist()
+    theta = np.arange(7.5,368,15)
+    width = [15]*24
+    colorscale = colour_mapping.get(context, "blues")  # Default to "blues" if context not in mapping
+
+    # Adjusting tick texts
+    ticktexts = [f"<b>{i}</b>" if i % 6 == 0 else "" for i in np.arange(24)]
+
+    # Create radial bar plot
+    radial_chart = go.Figure(go.Barpolar(
+        r=r,
+        theta=theta,
+        width=width,
+        marker_color=r,
+        marker_colorscale=colorscale,
+        marker_line_color="white",
+        marker_line_width=2,
+        opacity=0.8,
+        hoverinfo='text',  # Custom hover text
+        text=[f"Hour: {hour}<br>n_tracks: {n}" for hour, n in zip(df_subset['hour'], r)]
+    ))
+
+    # Update layout
+    radial_chart.update_layout(
+        template=None,
+        polar=dict(
+            hole=0.4,
+            bgcolor='rgb(223, 223, 223)',
+            radialaxis=dict(
+                showticklabels=False,
+                ticks='',
+                linewidth=2,
+                linecolor='white',
+                showgrid=False,
+            ),
+            angularaxis=dict(
+                tickvals=np.arange(0, 360, 15),
+                ticktext=ticktexts,
+                showline=True,
+                direction='clockwise',
+                period=24,
+                linecolor='white',
+                gridcolor='white',
+                showticklabels=True,
+                ticks=''
+            )
+        ),
+        title=f"Counts Listened Tracks per Hour",
+    )
+
+    return radial_chart
+
 def create_calendar_heatmap(df, account, context):
 
     # Step 1:
     df_daily_counts = df.copy()
     df_daily_counts["started_at"] = pd.to_datetime(df_daily_counts["started_at"], format='ISO8601').dt.date
     df_daily_counts["account_email"] = df_daily_counts["account_email"].apply(lambda x: x.split("@")[0])
-    df_daily_counts =df_daily_counts.groupby(["started_at", "account_email", "context"]).size().reset_index(name='n_tracks')
+    df_daily_counts = df_daily_counts.groupby(["started_at", "account_email", "context"]).size().reset_index(name='n_tracks')
     df_daily_counts.set_index("started_at", inplace=True)
 
     # Step 2: Create a complete index of dates for each participant and context
@@ -88,9 +179,14 @@ def create_calendar_heatmap(df, account, context):
                       "Eudaimonic":"oranges",
                       "Goal-Attainment":"greens",
                       "Other":"purples"}
-
-
-    df_subset = df_daily_counts.query(f"account_email == '{account}' & context=='{context}'").copy()
+    
+    if account == "All":
+        df_subset = (df_daily_counts.groupby(["started_at", "context"])[["n_tracks"]].sum()
+                    .query(f"context=='{context}'")
+                    .reset_index()
+                    .copy())
+    else:
+        df_subset = df_daily_counts.query(f"account_email == '{account}' & context=='{context}'").copy()
 
     # creating the plot
     cal_heatmap = calplot(
@@ -101,7 +197,8 @@ def create_calendar_heatmap(df, account, context):
             name="n_tracks",
             month_lines_width=2,
             gap=5,
-            dark_theme=False
+            dark_theme=False,
+            years_title=True
     )
 
     return cal_heatmap
@@ -193,17 +290,18 @@ def create_all_charts(server, counts_playlist_tracks, account, context, full_tra
         data = (MusicListeningSchema(many=True).dump(music_episodes)).get("data")
 
     df_music_history = pd.DataFrame.from_records(data)
-    df_music_history.to_csv("sample.csv", index=False)
+    # df_music_history.to_csv("sample.csv", index=False)
     if full_track_only:
         df_music_history = df_music_history[df_music_history["playback_inconsistency"]==0] 
 
     bar_chart = create_bar_chart(df_music_history)
+    radial_barchart = create_radial_barchart(df_music_history, account, context)
     calendar_heatmap = create_calendar_heatmap(df_music_history, account, context)
     table = create_table(server, df_music_history, counts_playlist_tracks)
     hist = create_hist(df_music_history)
 
 
-    return bar_chart, calendar_heatmap, table, hist
+    return bar_chart, radial_barchart, calendar_heatmap, table, hist
 
 
 
@@ -279,12 +377,14 @@ def create_dash_app(server):
         accounts_email = (SpotifyAccountSchema(many=True, only=["account_email", "cache_path"]).dump(accounts_obj)).get("data")
         accounts_email = [item.get("account_email").split("@")[0] for item in accounts_email]
 
-        #
-        ccm = spotipy.SpotifyClientCredentials(client_id=os.environ.get("SPOTIPY_CLIENT_ID"),client_secret=os.environ.get("SPOTIPY_CLIENT_SECRET"))
-        sp_ccm = spotipy.Spotify(client_credentials_manager=ccm, requests_timeout=10, retries=10)
-        playlists_n_tracks = {value:sp_ccm.playlist(key)["tracks"]["total"] for key,value in server.config.get("STUDY_PLAYLISTS").items()}
+        # This chunk of code may require user intervention to loging to Spotify API 
+        # ccm = spotipy.SpotifyClientCredentials(client_id=os.environ.get("SPOTIPY_CLIENT_ID"),client_secret=os.environ.get("SPOTIPY_CLIENT_SECRET"))
+        # sp_ccm = spotipy.Spotify(client_credentials_manager=ccm, requests_timeout=10, retries=10)
+        # playlists_n_tracks = {value:sp_ccm.playlist(key)["tracks"]["total"] for key,value in server.config.get("STUDY_PLAYLISTS").items()}
 
-
+    # Hardcoding track numbers per playlist as workaround
+    # to avoid the script hanging  and waiting for authorization
+    playlists_n_tracks = {"Affective":170, "Eudaimonic":149,"Goal-Attainment":167}
 
     dash_app.layout = dbc.Container(
     [
@@ -326,8 +426,8 @@ def create_dash_app(server):
             [
                 dbc.Col(
                     dcc.Dropdown(
-                        accounts_email,
-                        accounts_email[0],
+                        ["All"] + accounts_email,
+                        "All",
                         clearable=False,
                         id="accounts-dropdown",
                         placeholder="Select an account"
@@ -349,14 +449,24 @@ def create_dash_app(server):
             className="mb-3"
         ),
         
-        # Heatmap
-        dbc.Row(
+        # Heatmap and Radial Bar Chart Section
+        dbc.Row([
+            # Radial Bar Chart
             dbc.Col(
-                dcc.Graph(id="heatmap-tracks-calendar"),
-                width=12  # Full width for the heatmap
+                dcc.Graph(
+                    id="hour-radial-barchart",
+                    style={"height": "300px"}  # Adjust chart height
+                ),
+                width=3,
+                style={"display": "flex", "alignItems": "center", "justifyContent": "center"}  # Center vertically and horizontally
             ),
-            className="mb-4"
-        ),
+            
+            # Heatmap Calendar
+            dbc.Col(
+                dcc.Graph(id="heatmap-tracks-calendar", style={"height": "300px"}),
+                width=9
+            )
+        ], className="mb-4"),
 
         # Table and Histogram Section
         dbc.Row(
@@ -411,6 +521,7 @@ def create_dash_app(server):
 
     @dash_app.callback(
     [Output("counts-song-participants", "figure"), 
+     Output("hour-radial-barchart", "figure"),
      Output("heatmap-tracks-calendar", "figure"),
      Output("hist-time-context", "figure"),
      Output("table-progress", "data"),
@@ -424,13 +535,13 @@ def create_dash_app(server):
     )
     def update_graph(playback_bool, account, context):
         # Generate updated charts
-        barchart, heatmap, table, hist = create_all_charts(server, playlists_n_tracks,
+        barchart, radial, heatmap, table, hist = create_all_charts(server, playlists_n_tracks,
                                               account, context, playback_bool)
         
         # Convert data to Dash-friendly format
         data_records, columns, style_data_conditional = table
 
-        return barchart, heatmap, hist, data_records, columns, style_data_conditional
+        return barchart, radial, heatmap, hist, data_records, columns, style_data_conditional
 
     
     return dash_app

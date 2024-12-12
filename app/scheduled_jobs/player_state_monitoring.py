@@ -125,7 +125,7 @@ def __get_playback_state(sp):
 
 
 @with_appcontext
-def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01):
+def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, offline_limit=30):
     """
     
     """
@@ -158,12 +158,20 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01):
 
     # Get session id if there are previous record. Otherwise, set as first session
     last_record = MusicListening.get_participant_last_record(participant_pid)
+
+
+    if user_playback_state.get("progress_ms", None) == last_record.progress_track_ms:
+        LOGGER.warning("Activity detected due to lack of internet connection")
+        sys.exit (-1)
+
+
     if last_record:
         session_id = last_record.listening_session_id + 1
     else:
         session_id = 1
-
+    
     #
+    n_offline = 0
     while user_playback_state is not None:
 
         # Set times it not paused
@@ -180,12 +188,14 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01):
 
             data = {
                 "playback_inconsistency": True if datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0) != music_listening.started_at else False,
+                "offline_playback":True if n_offline!=0 else False,
                 "device_volume": user_playback_state["device"]["volume_percent"],
                 "shuffle_state": user_playback_state["shuffle_state"],
                 "smart_shuffle": user_playback_state["smart_shuffle"],
                 "repeat_state": user_playback_state["repeat_state"],
                 "progress_track_ms": user_playback_state.get("progress_ms", None),
-                "elapsed_time_ms": int((ended_at - started_at).total_seconds() * 1000),
+                # Cap elapsed time if issue with internet conection
+                "elapsed_time_ms": int((ended_at - started_at).total_seconds() * 1000) if n_offline==0 else track_duration_ms,
                 "last_playback_change_ms": user_playback_state["timestamp"],
                 "monitored_at": datetime.fromtimestamp(time.time()),
                 "ended_at": ended_at
@@ -250,7 +260,9 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01):
                     f"Progress ms: {user_playback_state.get('progress_ms', None)} | "
                     f"Progress %: {user_playback_state.get('progress_ms', None)/track_duration_ms:.2%} | "
                     f"Last playback change: {datetime.fromtimestamp(user_playback_state['timestamp']/1000)} | " 
-                    f"Currently playing: {user_playback_state['is_playing']} |"
+                    f"Currently playing: {user_playback_state['is_playing']} | "
+                    f"Offline Logging: {n_offline}/{offline_limit} |"
+
                 )
         
         LOGGER.info(log_msg)
@@ -278,6 +290,12 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01):
             else:
                 track_ongoing = True
                 record_id = music_listening.id
+                if n_offline>=offline_limit:
+                    LOGGER.warning("Potential internet connection issue since song has finished already")
+                    break
+                n_offline = n_offline+1 if user_playback_state.get('progress_ms', None)/track_duration_ms == 1 else 0
+
+                
 
     #
     current_session = MusicListening.get_by_pid_session_id(participant_pid, session_id)
@@ -291,6 +309,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01):
                 f", with the dominant context being {dominant_context}")
 
     return session_id, n_session_tracks, session_total_ms, dominant_context
+
 
 @with_appcontext
 def __send_survey(participant_pid, session_id, account_email, dominant_context):

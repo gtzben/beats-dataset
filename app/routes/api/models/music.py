@@ -6,6 +6,8 @@ Date: 2024-11-20
 """
 import time
 from datetime import datetime
+from sqlalchemy import func, and_, or_
+from sqlalchemy.orm import aliased
 from app.extensions import db
 
 class MusicListening(db.Model):
@@ -31,6 +33,7 @@ class MusicListening(db.Model):
     context_uri = db.Column(db.String(50))
     # context_cat = db.Column(db.String(50))
     playback_inconsistency = db.Column(db.Boolean(), default=False) # change to playback inconsistency (brief pause, scrub, restart, etc)
+    offline_playback = db.Column(db.Boolean(), default=False) # Lost internet connection
     duration_ms = db.Column(db.Integer) # Song time duration in milliseconds
     elapsed_time_ms = db.Column(db.Integer) # Total time elapsed from start to end in milliseconds. May include playback inconsistencies. 
     progress_track_ms = db.Column(db.Integer) # Monitor ongoing progress in milliseconds of current song.
@@ -51,7 +54,7 @@ class MusicListening(db.Model):
     def get_participant_last_record(cls, participant_pid):
         return (
         cls.query.filter_by(participant_pid=participant_pid)
-        .order_by(cls.listening_session_id.desc())
+        .order_by(cls.listening_session_id.desc(), cls.track_session_id.desc(),)
         .first()
     )
 
@@ -60,6 +63,76 @@ class MusicListening(db.Model):
         return (cls.query.filter_by(participant_pid=participant_pid,
                                     listening_session_id=session_id)
                                     .all())
+
+    @classmethod
+    def get_participant_daily_sessions_start(cls, participant_pid, date):
+        # Create a subquery with row_number for each session
+        subquery = (
+            db.session.query(
+                cls.id,
+                cls.listening_session_id,
+                cls.started_at,
+                cls.participant_pid,
+                func.row_number()
+                .over(
+                    partition_by=cls.listening_session_id,
+                    order_by=cls.started_at
+                )
+                .label("row_number")
+            )
+            .filter(
+                and_(
+                    cls.participant_pid == participant_pid,
+                    func.DATE(cls.started_at) == date
+                )
+            )
+            .subquery()
+        )
+
+        # Query the subquery to get only the first record of each session
+        result = (
+            db.session.query(cls)
+            .join(subquery, cls.id == subquery.c.id)
+            .filter(subquery.c.row_number == 1)
+            .all()
+        )
+
+        return result
+    
+    @classmethod
+    def get_participant_daily_sessions_end(cls, participant_pid, date):
+        # Create a subquery with row_number for each session
+        subquery = (
+            db.session.query(
+                cls.id,
+                cls.listening_session_id,
+                cls.ended_at,
+                cls.participant_pid,
+                func.row_number()
+                .over(
+                    partition_by=cls.listening_session_id,
+                    order_by=cls.ended_at.desc()
+                )
+                .label("row_number")
+            )
+            .filter(
+                and_(
+                    cls.participant_pid == participant_pid,
+                    func.DATE(cls.ended_at) == date
+                )
+            )
+            .subquery()
+        )
+
+        # Query the subquery to get only the first record of each session
+        result = (
+            db.session.query(cls)
+            .join(subquery, cls.id == subquery.c.id)
+            .filter(subquery.c.row_number == 1)
+            .all()
+        )
+
+        return result
 
 
     @classmethod
