@@ -32,6 +32,9 @@ api.add_resource(participant.ParticipantLinkResources, '/participants/<string:pa
 api.add_resource(participant.ParticipantUnlinkResources, '/participants/<string:participant_pid>/unlink_resources')
 api.add_resource(participant.ParticipantActiveResource, '/participants/<string:participant_pid>/status')
 api.add_resource(participant.ParticipantLogin, '/participants/login')
+api.add_resource(participant.ParticipantWithdrawResource, '/participants/<string:participant_pid>/withdraw-request')
+api.add_resource(participant.ParticipantExcludeResource, '/participants/exclude/<string:token>')
+api.add_resource(participant.ParticipantConcludeResource, '/participants/conclude')
 
 
 # Device related resources

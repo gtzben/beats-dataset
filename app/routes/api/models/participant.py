@@ -21,6 +21,8 @@ class Participant(db.Model):
     ndh = db.Column(db.String(10), nullable=False)
     is_active = db.Column(db.Boolean(), default=False)
     is_verified = db.Column(db.Boolean(), default=False)
+    is_withdrawn = db.Column(db.Boolean(), default=False)
+    is_completed= db.Column(db.Boolean(), default=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
     user_id = db.Column(db.Integer,db.ForeignKey('user.id'), nullable=False)
@@ -32,7 +34,7 @@ class Participant(db.Model):
 
 
     @classmethod
-    def get_all_participants(cls, is_active=None, is_verified=None):
+    def get_all_participants(cls, is_active=None, is_verified=None, is_withdrawn=None, is_completed=None):
         query = cls.query
 
         if is_active is not None:
@@ -40,6 +42,12 @@ class Participant(db.Model):
 
         if is_verified is not None:
             query = query.filter_by(is_verified=is_verified)
+
+        if is_withdrawn is not None:
+            query = query.filter_by(is_withdrawn=is_withdrawn)
+
+        if is_completed is not None:
+            query = query.filter_by(is_completed=is_completed)
 
         return query.all()
         

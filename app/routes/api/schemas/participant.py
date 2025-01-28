@@ -29,6 +29,7 @@ class ParticipantSchema(Schema):
     ndh = fields.String(required=True)
     is_active = fields.Boolean(dump_only=True)
     is_verified = fields.Boolean(dump_only=True)
+    is_withdrawn = fields.Boolean(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
@@ -84,6 +85,8 @@ class ParticipantFlatSchema(Schema):
     ndh = fields.String(dump_only=True)
     is_active = fields.Boolean(dump_only=True)
     is_verified = fields.Boolean(dump_only=True)
+    is_withdrawn = fields.Boolean(dump_only=True)
+    is_completed = fields.Boolean(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 

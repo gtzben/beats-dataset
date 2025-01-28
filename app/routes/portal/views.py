@@ -5,7 +5,7 @@ from flask import render_template, redirect, url_for, flash, session, request
 from app.utils import verify_token
 from app.routes.portal import portal_bp
 from app.routes.portal.forms import( LoginForm, RegistrationForm, DeviceForm, ParticipantForm,
-                                     AssociationForm, ResetPasswordRequestForm, ResetPasswordForm)
+                                     AssociationForm, WithdrawalForm,ResetPasswordRequestForm, ResetPasswordForm)
 
 @portal_bp.route('/login',  methods=['GET', 'POST'])
 def login():
@@ -290,7 +290,7 @@ def view_resources():
 @login_required
 def associate_resources():
     # Fetch participants, devices and accounts available for dropdowns
-    participants_url = url_for("api.participantportal", _external=True) + "?is-verified=true&is-active=true"
+    participants_url = url_for("api.participantportal", _external=True) + "?is-verified=true&is-active=true&is-withdrawn=false"
     response_participants = requests.get(url=participants_url,
                             headers={"Authorization": f"Bearer {session['access_token']}"})
     participants_data = response_participants.json()
@@ -360,6 +360,60 @@ def associate_resources():
             flash('An error occurred. Please try again later.', 'danger')
 
     return render_template('associate_resources.html', association_form=association_form)
+
+
+@portal_bp.route('/exclude-participant', methods=['GET', 'POST'])
+@login_required
+def exclude_participant_data():
+    # Fetch valid participants for dropdown list
+    participants_url = url_for("api.participantportal", _external=True) + "?is-verified=true&is-withdrawn=false"
+    response_participants = requests.get(url=participants_url,
+                            headers={"Authorization": f"Bearer {session['access_token']}"})
+    participants_data = response_participants.json()
+
+    if response_participants == HTTPStatus.UNAUTHORIZED:
+        # Try refreshing the token
+        if refresh_access_token():
+            return redirect(request.url)  # Retry the request
+        else:
+            flash('Session expired. Please log in again.', 'warning')
+            return redirect(url_for('portal.login'))
+
+    elif response_participants.status_code != HTTPStatus.OK:
+
+        return  f"<h1>{participants_data['message']}<h1>"
+    
+    withdrawal_form = WithdrawalForm()
+    withdrawal_form.participants.choices = [(p.get("pid"),p.get("pid")) for p in participants_data['data']]
+
+    if withdrawal_form.validate_on_submit():
+
+        withdrawal_url = url_for("api.participantwithdrawresource", _external=True,
+                                participant_pid=withdrawal_form.participants.data)
+
+        # sending post request and saving response as response object
+        response = requests.post(url=withdrawal_url, headers={"Authorization": f"Bearer {session['access_token']}"})
+        api_data = response.json()
+
+        if response.status_code == HTTPStatus.OK:
+            # Save tokens in the session
+            flash(api_data["message"], 'success')
+            return redirect(url_for('portal.dashboard'))  # Redirect to the dashboard
+        elif response.status_code == HTTPStatus.BAD_REQUEST:
+            flash(api_data["message"], 'danger')
+        elif response.status_code == HTTPStatus.UNAUTHORIZED:
+            # Try refreshing the token
+            if refresh_access_token():
+                return redirect(request.url)  # Retry the request
+            else:
+                flash('Session expired. Please log in again.', 'warning')
+                return redirect(url_for('portal.login'))
+        else:
+            flash('An error occurred. Please try again later.', 'danger')
+
+    return render_template('withdraw_participant.html', withdrawal_form=withdrawal_form)
+    
+
 
 
 @portal_bp.route('/connect-spotify')

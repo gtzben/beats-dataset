@@ -44,5 +44,9 @@ class AssociationForm(FlaskForm):
     spotify_accounts = SelectField("Available Spotify Acounts", choices=[])
     submit = SubmitField('Associate')
 
+class WithdrawalForm(FlaskForm):
+    participants = SelectField("All Participants", choices=[])
+    submit = SubmitField('Withdraw')
+
 
     

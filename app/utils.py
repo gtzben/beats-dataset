@@ -106,9 +106,9 @@ def send_email(to, subject, html, participant=None, **kwargs):
         Thread(target=send_async_email, args=(app, msg)).start()
 
         if participant:
-            current_app.logger.debug(f"Email '{subject}' sent to {participant}!")
+            current_app.logger.info(f"Email '{subject}' sent to {participant}!")
         else:
-            current_app.logger.debug(f"Email '{subject}' sent to {to}!")
+            current_app.logger.info(f"Email '{subject}' sent to {to}!")
 
     except Exception as e:
         current_app.logger.exception(f"Error while sending the email '{subject}' to {to}: {e}")
@@ -118,8 +118,11 @@ def seed_data():
     """Insert seed data into the database"""
 
     surveys = [
+        {'name': 'demo', 'description':'Demographics', 'n_items':26},
         {'name': 'tipi', 'description':'Ten-Item Personality Inventory', 'n_items':10},
         {'name': 'panas', 'description':'Positive and Negative Affect Schedule', 'n_items':20},
+        {'name': 'pss', 'description':'Perceived Stress Scale', 'n_items':14},
+        {'name': 'phq9', 'description':'Patient Health Questionnaire', 'n_items':9},
         {'name': 'stompr', 'description':'Short Test Of Music Preferences - Revised', 'n_items':23},
         {'name': 'gms', 'description':'The Goldsmiths Musical Sophistication Index', 'n_items':39}
     ]

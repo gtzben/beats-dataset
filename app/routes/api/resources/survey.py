@@ -50,6 +50,7 @@ class SurveyResponsesResource(Resource):
         try:
             survey_data = SurveySchema().load(json_data)
         except ValidationError as errors:
+            self.logger.error(f"Validation error when submitting surveys data: {errors.messages}")
             return {'message': 'Validation errors', 'errors':errors.messages}, HTTPStatus.BAD_REQUEST
         
         participant = Participant.get_by_pid(participant_pid)

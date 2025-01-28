@@ -23,6 +23,8 @@ from flask import current_app, render_template
 from flask_mail import Message
 from flask.cli import with_appcontext
 
+from app.extensions import db
+
 #
 LOGGER =logging.getLogger("scheduled_monitoring")
 STUDY_SURVEYS = {"Goal-Attainment":"https://uofg.qualtrics.com/jfe/form/SV_elX4ThXOhQqTxpY",
@@ -78,7 +80,7 @@ def __get_spotify_client(email):
                                     scope=scope, redirect_uri=current_app.config["SPOTIPY_REDIRECT_URI"], open_browser=False,
                                     cache_handler=cache_handler)
         spotify = spotipy.Spotify(auth_manager=auth)
-        LOGGER.debug(f"Spotify Client Initialised with account {email}")
+        # LOGGER.debug(f"Spotify Client Initialised with account {email}")
         
         return spotify
     except:
@@ -138,7 +140,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
 
     # Terminate if no activity
     if user_playback_state is None:
-        LOGGER.debug("No activity detected")
+        # LOGGER.debug("No activity detected")
         sys.exit (-1)
         
     # Terminate if music is not being listened
@@ -160,16 +162,16 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
     last_record = MusicListening.get_participant_last_record(participant_pid)
 
 
-    if user_playback_state.get("progress_ms", None) == last_record.progress_track_ms:
-        LOGGER.warning("Activity detected due to lack of internet connection")
-        sys.exit (-1)
-
-
     if last_record:
+
+        if user_playback_state.get("progress_ms", None) == last_record.progress_track_ms:
+            LOGGER.warning("Activity detected due to lack of internet connection")
+            sys.exit (-1)
+
         session_id = last_record.listening_session_id + 1
+        
     else:
         session_id = 1
-    
     #
     n_offline = 0
     while user_playback_state is not None:
@@ -373,6 +375,7 @@ def monitor_playback_state(spotify_email,sleep_time,send_email, th_songs, th_min
 
     #
     __setup_logger(spotify_email, dir_path)
+
 
     #
     spotify_client = __get_spotify_client(spotify_email)

@@ -1,0 +1,13 @@
+
+<h1>Withdraw Participant</h1>
+<form action="{{ url_for('portal.exclude_participant_data', _external=True ) }}" method="post" novalidate>
+    {{ withdrawal_form.hidden_tag() }}
+    <p>
+        {{ withdrawal_form.participants.label }}<br>
+        {{ withdrawal_form.participants }}<br>
+        {% for error in withdrawal_form.participants.errors %}
+        <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>{{ withdrawal_form.submit() }}</p>
+</form>

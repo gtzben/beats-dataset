@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: auto;"></div>
+
+<div style="max-width: 600px; margin: auto;">
+    <h2>Thank You {{session.survey_participant_pid}} for Your Time and Effort!</h2>
+    <p>
+        We understand your decision to opt out of the study and deeply appreciate the time you have dedicated to this project.
+    </p>
+    <p>
+        Please note that any data collected during your participation will not be included in the final dataset.
+    </p>
+    <p>Thank you for your cooperation, and we wish you the best in your future endeavors!</p>
+</div>
+
+{% endblock %}

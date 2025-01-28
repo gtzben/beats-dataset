@@ -145,9 +145,9 @@ class UserVerifyResource(Resource):
         user.is_verified = True
         user.save()
 
-        self.logger.debug(f"User account of {user.email} has been verified!")
+        self.logger.info(f"User account of {user.email} has been verified!")
 
-        return make_response(render_template('account_verified.html'), HTTPStatus.OK, {'Content-Type': 'text/html'})
+        return make_response(render_template('confirm_token.html', title="Account Verified", confirm='Your account has been successfully verified.'), HTTPStatus.OK, {'Content-Type': 'text/html'})
     
 
 class ResetPwdRequest(Resource):

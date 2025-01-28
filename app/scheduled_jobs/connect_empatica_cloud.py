@@ -98,9 +98,51 @@ def process_avro_file_from_s3(file_key, s3_client):
 
     return df_signals
 
+# delete
+def get_files_from_s3_daily(participant_id, serial_number, date):
+    """
+    
+    """
 
+    s3 = boto3.client('s3')
+    
+    # Prefix based on the known directory structure
+    prefix = os.path.join(LOCATION, f"1/1/participant_data/{date}/{participant_id}-{serial_number}/raw_data/v6/")
 
-def get_files_from_s3(participant_id, serial_number, date, started_at, ended_at,
+    # Create a regex pattern to match timestamps within the range
+    file_pattern = re.compile(
+        fr"1-1-{participant_id}_(?P<timestamp>\d+)\.avro$"
+    )
+    
+    response = s3.list_objects_v2(
+        Bucket=BUCKET_NAME,
+        Prefix=prefix
+    )
+
+    # Collecting files that match the specific participant_id and timestamp pattern
+    signals_session = []
+    avro_timestamps = []
+    if 'Contents' in response:
+
+        for obj in response['Contents']:
+            file_key = obj['Key']
+
+            match = file_pattern.search(file_key)
+            
+            if match:
+                # Extract the timestamp from the filename
+                file_timestamp = int(match.group("timestamp"))
+
+                df_signals = process_avro_file_from_s3(file_key, s3)
+                signals_session.append(df_signals)
+                avro_timestamps.append(file_timestamp)
+
+    list_df_signals = [pd.concat(list(signals), ignore_index=True) for signals in zip(*signals_session)]
+
+    return list_df_signals, avro_timestamps
+
+# keep it general
+def get_files_from_s3_ts_range(participant_id, serial_number, date, started_at, ended_at,
                        last_session_ts, offset_minutes=30):
     """
     
@@ -140,7 +182,7 @@ def get_files_from_s3(participant_id, serial_number, date, started_at, ended_at,
                 file_timestamp = int(match.group("timestamp"))
 
                 # Check if the timestamp falls within the range
-                if started_at - offset_seconds <= file_timestamp <= ended_at:
+                if started_at - offset_seconds <= file_timestamp <= ended_at + offset_seconds:
 
                     if file_timestamp <= last_session_ts:
                         skipped=True
