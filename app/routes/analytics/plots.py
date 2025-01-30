@@ -644,7 +644,7 @@ def create_dash_app(server):
             dbc.Row(
                 dbc.Col(
                     html.H1(
-                        "Participant Music Engagement Insights",
+                        "Music Engagement Analytics: Participant Insights",
                         style={'textAlign': 'center', 'margin': '20px 0'}
                     )
                 )
