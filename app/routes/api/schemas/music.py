@@ -8,6 +8,8 @@ Date: 2024-11-23
 from marshmallow import Schema, fields, post_dump
 from flask import current_app
 
+from app.utils import get_function_context
+
 class MusicListeningSchema(Schema):
 
     """
@@ -40,7 +42,8 @@ class MusicListeningSchema(Schema):
         # Check if the object has a context_uri attribute or is a list of objects
         if isinstance(obj, list) or hasattr(obj, "__iter__"):  # For InstrumentedList or other iterables
             # Retrieve context_uri values from each item in the list and map them
-            return [current_app.config["STUDY_PLAYLISTS"].get(item.context_uri, "Other") for item in obj]
+            return [get_function_context(current_app.config["STUDY_PLAYLISTS"], item.context_uri) for item in obj]
         elif hasattr(obj, "context_uri"):  # Handle single object
-            return current_app.config["STUDY_PLAYLISTS"].get(obj.context_uri, "Other")
+            return get_function_context(current_app.config["STUDY_PLAYLISTS"], obj.context_uri)
+        
         return "Other"

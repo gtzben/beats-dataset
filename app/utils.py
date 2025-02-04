@@ -114,6 +114,23 @@ def send_email(to, subject, html, participant=None, **kwargs):
         current_app.logger.exception(f"Error while sending the email '{subject}' to {to}: {e}")
 
 
+def get_function_context(function_playlist_mapping, context_uri): 
+    """
+    Get music function of of playlists listened
+    -------
+    Inputs:
+        function_playlist_mapping(dict): Mapping music function and study playlists
+        context_uri(str): 
+    Output:
+        func(str): Music function of passed playlist uri
+
+    """   
+    for func, playlists in function_playlist_mapping.items():
+        if context_uri in playlists:
+            return func
+    return "Other"
+
+
 def seed_data():
     """Insert seed data into the database"""
 

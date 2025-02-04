@@ -15,7 +15,7 @@ import errno, fcntl
 from app.routes.api.models.spotifyaccount import SpotifyAccount
 from app.routes.api.models.participant import Participant
 from app.routes.api.models.music import MusicListening
-from app.utils import decrypt_email
+from app.utils import decrypt_email, get_function_context
 from app.extensions import mail
 
 
@@ -216,7 +216,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
             #
             current_context = user_playback_state.get("context", dict())
             context_uri = None if current_context is None else current_context.get("uri", None)
-            context_cat = current_app.config['STUDY_PLAYLISTS'].get(context_uri, 'Other')
+            context_cat = get_function_context(current_app.config['STUDY_PLAYLISTS'], context_uri)
             context_counter[context_cat]= context_counter.get(context_cat,0)+1
             n_session_tracks = sum(context_counter.values())
             
