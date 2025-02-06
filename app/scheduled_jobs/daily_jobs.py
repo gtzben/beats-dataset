@@ -98,7 +98,7 @@ def daily_physio_transfer(id_participant, spotify_account, pid, device_serial, p
     if len(start_end_sessions)>0:
         LOGGER.info(start_end_sessions)
 
-        signals_session, timestamps, _ = get_files_from_s3_ts_range(pid, device_serial, date, -float("inf"), float("inf"), last_session_ts, offset_minutes=0)
+        signals_session, timestamps, already_transferred = get_files_from_s3_ts_range(pid, device_serial, date, -float("inf"), float("inf"), last_session_ts, offset_minutes=0)
 
         if len(signals_session)>0:
             # Assign file name keeping original order
@@ -115,6 +115,12 @@ def daily_physio_transfer(id_participant, spotify_account, pid, device_serial, p
                 file_path = os.path.join(save_dir, file_name)
                 df_signal.to_csv(file_path, index=False)
 
+                # Use eda timestamps as reference
+                # no particular purpose
+                if file_name == "eda.csv":
+                    signal_start = df_signal["unix_timestamp"].min()
+                    signal_end = df_signal["unix_timestamp"].max()
+
             #
             df_tracks_daily = pd.DataFrame()
             for music_session in start_end_sessions:
@@ -127,12 +133,19 @@ def daily_physio_transfer(id_participant, spotify_account, pid, device_serial, p
                 df_tracks_session['ended_at'] = pd.to_datetime(df_tracks_session['ended_at'], format='ISO8601').astype(int) // 10**3
 
                 df_tracks_daily = pd.concat([df_tracks_daily, df_tracks_session]).reset_index(drop=True)
+
+            # Get music session tracks within signal's timestamp range
+            df_tracks_daily = df_tracks_daily[(df_tracks_daily["started_at"] >= signal_start) & 
+                                        (df_tracks_daily["started_at"] <= signal_end)]
             df_tracks_daily.to_csv(os.path.join(save_dir,"tracks.csv"), index=False)
 
             LOGGER.info(f"Succesfully preprocessed {len(timestamps)} avro files and saved raw data in `{save_dir}` "+
                 f"directory with {len(start_end_sessions)} music sessions")
 
             files_transfered = True
+
+        elif already_transferred:
+            LOGGER.info("Physiology and music session already transferred.")
 
         else:
             LOGGER.warning(f"Physiological data of {id_participant} with device {device_serial} and account {spotify_account} " + 
@@ -196,11 +209,13 @@ def transfer_physio_data(all_daily_physio):
     
     """
 
-    today = datetime.today().strftime('%Y-%m-%d')
+    # today = datetime.today().strftime('%Y-%m-%d')
+    # Running at 00:33, consider until yesterday
+    yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
 
     participant_obj = Participant.get_all_participants(is_active=True, is_withdrawn=False)
     active_participants = (ParticipantFlatSchema(many=True, only=["id", "pid", "spotify_account", "device_serial", "created_at"]).dump(participant_obj)).get("data")
-    
+
     total_sessions_transfered = 0
     for participant in active_participants:
     
@@ -223,8 +238,8 @@ def transfer_physio_data(all_daily_physio):
             last_session_date = str(datetime.fromisoformat(created_at).date())
             last_session_ts = int(datetime.fromisoformat(last_session_date).timestamp())
 
-        # Check daily in case wristband did not syncrhonised data with the app
-        date_range = list(pd.date_range(last_session_date, today).strftime(date_format="%Y-%m-%d"))
+        # Check daily since last data transfer in case wristband did not syncrhonised data with the app
+        date_range = list(pd.date_range(last_session_date, yesterday).strftime(date_format="%Y-%m-%d"))
 
         # Check daily activity
         LOGGER.info(f"Search and transfer physiological data from S3 to app for participant {pid} from {date_range[0]} to {date_range[-1]}")
@@ -294,8 +309,6 @@ def notify_experiment_completion():
                     obj.save()
                 except Exception:
                     LOGGER.exception(f"Unable to send email to {obj.pid} to conclude participation.")
-            
-
 
     return
 
@@ -326,6 +339,6 @@ def run_daily_jobs(all_daily_physio):
     try:
         notify_experiment_completion()
     except Exception as e:
-        LOGGER.error(f"An error occurred while transfering physiological data to app: {e}")
+        LOGGER.error(f"An error occurred while notifying experiment completion data to app: {e}")
 
         

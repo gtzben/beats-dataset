@@ -4,7 +4,7 @@
 Author: Benjamin Gutierrez Serafin
 Date: 2024-12-05
 """
-import os, spotipy, math, dash
+import os, spotipy, math, dash, time
 from datetime import datetime
 from dash import dcc, html, dash_table
 import dash_daq as daq
@@ -29,6 +29,9 @@ from app.routes.api.models.participant import Participant
 from app.routes.api.schemas.participant import ParticipantFlatSchema
 
 from app.routes.api.models.survey import Response
+
+ACCOUNTS_EMAILS = []
+CONTEXTS = ["Affective", "Eudaimonic", "Goal-Attainment", "Other"]
 
 # Function to map percentage to a color
 def get_color_scale(value):
@@ -167,26 +170,19 @@ def create_calendar_heatmap(df, account, context):
     df_daily_counts.set_index("started_at", inplace=True)
 
     # Step 2: Create a complete index of dates for each participant and context
-    accounts = df_daily_counts["account_email"].unique()
-    contexts = df_daily_counts["context"].unique()
     all_dates = pd.date_range(df_daily_counts.index.min(), pd.to_datetime("today").normalize())
 
-    # Step 4: Create a MultiIndex of all possible combinations
+    # Step 3: Create a MultiIndex of all possible combinations
     index = pd.MultiIndex.from_product(
-        [all_dates, accounts, contexts],
+        [all_dates, ACCOUNTS_EMAILS, CONTEXTS],
         names=["started_at", "account_email", "context"]
     )
 
-    # Step 5: Reindex the dataset
+    # Step 4: Reindex the dataset
     df_daily_counts = df_daily_counts.reset_index().set_index(["started_at", "account_email", "context"])
     df_daily_counts = df_daily_counts.reindex(index, fill_value=0).reset_index()
 
-    # Step 6:
-    colour_mapping = {"Affective":"blues",
-                      "Eudaimonic":"oranges",
-                      "Goal-Attainment":"greens",
-                      "Other":"purples"}
-    
+    # Step 5: Select subset account
     if account == "All":
         df_subset = (df_daily_counts.groupby(["started_at", "context"])[["n_tracks"]].sum()
                     .query(f"context=='{context}'")
@@ -195,7 +191,12 @@ def create_calendar_heatmap(df, account, context):
     else:
         df_subset = df_daily_counts.query(f"account_email == '{account}' & context=='{context}'").copy()
 
-    # creating the plot
+    colour_mapping = {"Affective":"blues",
+                      "Eudaimonic":"oranges",
+                      "Goal-Attainment":"greens",
+                      "Other":"purples"}
+
+    # Step 6: Creating the plot
     cal_heatmap = calplot(
             df_subset,
             x="started_at",
@@ -218,18 +219,24 @@ def create_table_progress(server, df, participants, progress_tracking):
 
     try:
         table = (df.groupby(["participant_id", "context"])["track_uri"]
-                .apply(lambda x: len(x.unique()))
+                .apply(lambda x: len([t for t in x.unique() if t in progress_tracking.get(x.name[-1],[])]))
                 .reset_index(name="counts")
                 .pivot_table(index="participant_id", columns="context", values="counts")
                 .fillna(0)
                 .drop("Other",axis=1))
-        table = pd.concat([table, default_table[~default_table.index.isin(table.index)].dropna()])
+        # If context not listened by active participants, turn NaNs to 0
+        table = pd.concat([table, default_table[~default_table.index.isin(table.index)].dropna()]).fillna(0)
     except Exception as e:
         server.logger.error(f"Error while obtaining participants progress: {e}")
         table = default_table.copy()
+
     table["Participation Time"] = ((datetime.today() - participants.set_index("id")["created_at"])).clip(upper=progress_tracking["Participation Time"])
 
-    table = (table.div(pd.Series(progress_tracking)).applymap(lambda x: f"{x*100:,.2f}%")
+    # Replace when fixed issue with spotify hanging request
+    # progress_tracking_len = {key:(len(value) if hasattr(value, "__iter__") else value) for key, value in progress_tracking.items()} 
+    progress_tracking_len = {"Participation Time":pd.Timedelta(days=int(server.config.get("BATCH_PERIOD_DAYS"))), "Affective":41, "Eudaimonic":38,"Goal-Attainment":40}
+
+    table = (table.div(pd.Series(progress_tracking_len)).applymap(lambda x: f"{x*100:,.2f}%")
          .reset_index()
          .rename(columns={'index': 'PID'}))
     
@@ -350,6 +357,45 @@ def score_panas(df_grouped):
 
     return scores
 
+def score_pss(df_grouped):
+    """
+    Compute PSS score.
+    Reversed items: 4,5,6,7,9,10,13
+    
+    Reverse score: recode a 4 with a 0, a 3 with a 1, a 2 stays 2, 1 with a 3 and 4 with a 0)
+    """
+
+    pss_score = {
+        ("PSS",""): lambda df: ((df.loc[df["item"].isin([1,2,3,8,11,12,14])]["response"].sum())+
+                                ((5-df.loc[df["item"].isin([4,5,6,7,9,10,13])]["response"]).sum()))
+    }
+
+    # Make sure responses are int
+    df_grouped["response"] = df_grouped["response"].astype(int)
+
+    #Calculate scores
+    score = {dimension: score_func(df_grouped) for dimension, score_func in pss_score.items()}
+
+    return score
+
+
+def score_phq9(df_grouped):
+    """
+    Compute PHQ9 score.
+    
+    """
+
+    phq9_score = {
+        ("PHQ9",""): lambda df: df["response"].sum()}
+
+    # Make sure responses are int
+    df_grouped["response"] = df_grouped["response"].astype(int)
+
+    #Calculate scores
+    score = {dimension: score_func(df_grouped) for dimension, score_func in phq9_score.items()}
+
+    return score
+
 
 def score_stompr(df_grouped):
     """
@@ -447,6 +493,7 @@ def get_scores_psychometrics(df_answers):
     """
 
     questionnaire_scoring = {"tipi":score_tipi, "panas":score_panas,
+                             "pss":score_pss,"phq9":score_phq9,
                              "stompr":score_stompr, "gms": score_gms}
 
     grouped = df_answers.groupby("participant_id")
@@ -514,7 +561,8 @@ def create_all_charts(server, participation_progress, account, context, full_tra
             responses = Response.query.filter_by(participant_pid=par["pid"]).all()
             for response in responses:
                 question = response.question
-                survey_record = {"participant_id": par["id"], "questionnaire":question.questionnaire_name, "item":question.n_item, "response":response.response}
+                survey_record = {"participant_id": par["id"], "questionnaire":question.questionnaire_name,
+                                  "item":question.n_item, "response":response.response, "response_created_at":response.created_at}
                 survey_data.append(survey_record)
 
     #
@@ -531,13 +579,15 @@ def create_all_charts(server, participation_progress, account, context, full_tra
 
     #
     df_responses = pd.DataFrame.from_records(survey_data)
+    df_responses["response_created_at"] = pd.to_datetime(df_responses["response_created_at"])
     df_responses["participant_id"] = df_responses["participant_id"].apply(lambda x: f"P{str(x).zfill(2)}")
     df_responses = (pd.merge(df_responses, df_participants.rename({"id":"participant_id", "pid":"participant_pid"}, axis=1),
                             on="participant_id", how="inner"))
-
-    # df_music_history.to_csv("music_sample.csv", index=False)
-    # df_participants.to_csv("participant_sample.csv", index=False)
-    # df_responses.to_csv("survey_sample.csv", index=False)
+    
+    # # Save raw data for notebooks 
+    # df_music_history.to_csv("music_sample_feb.csv", index=False)
+    # df_participants.to_csv("participant_sample_feb.csv", index=False)
+    # df_responses.to_csv("survey_sample_feb.csv", index=False)
 
     if full_track_only:
         df_music_history = df_music_history[df_music_history["playback_inconsistency"]==0] 
@@ -554,10 +604,39 @@ def create_all_charts(server, participation_progress, account, context, full_tra
 
     return bar_chart, radial_barchart, calendar_heatmap, hist, table_progress, table_scores, table_top_tracks
 
+def get_context_tracks_id(cache_path, server):
+    scope = "user-read-playback-state user-read-email playlist-read-private"
 
+    cache_handler = spotipy.CacheFileHandler(cache_path=cache_path)
+    # Read public playlist, no scope required.
+    auth = spotipy.SpotifyOAuth(client_id=server.config.get("SPOTIPY_CLIENT_ID"), client_secret=server.config.get("SPOTIPY_CLIENT_SECRET"),
+                                scope=scope, redirect_uri=server.config.get("SPOTIPY_REDIRECT_URI"), open_browser=False, cache_handler=cache_handler)
+    spotify = spotipy.Spotify(auth_manager=auth)
+
+    progress_tracking = {"Participation Time":pd.Timedelta(days=int(server.config.get("BATCH_PERIOD_DAYS"))), "Affective":[], "Eudaimonic":[],"Goal-Attainment":[]}
+
+    for func, pl_uris in server.config.get("STUDY_PLAYLISTS").items():
+        for pl_id in pl_uris:
+            offset = 0
+            function_tracks = []
+            while True:
+                response = spotify.playlist_items(pl_id,offset=offset,
+                                            fields='items.track.id,total',
+                                            additional_types=['track'])
+                if len(response['items']) == 0:
+                    break
+                function_tracks.extend([f"spotify:track:{t['track']['id']}" for t in response['items']])
+                offset = offset + len(response['items'])
+                time.sleep(5) # Avoid too many request wait 5 seconds.
+
+            progress_tracking[func].extend(function_tracks)
+
+    return progress_tracking
 
 
 def create_dash_app(server):
+
+    global ACCOUNTS_EMAILS
 
     dash_app = dash.Dash(
         __name__,
@@ -625,18 +704,24 @@ def create_dash_app(server):
     with server.app_context():
         #
         accounts_obj = SpotifyAccount.get_all_accounts()
-        accounts_email = (SpotifyAccountSchema(many=True, only=["account_email", "cache_path"]).dump(accounts_obj)).get("data")
-        accounts_email = [item.get("account_email").split("@")[0] for item in accounts_email]
+        accounts_dict = (SpotifyAccountSchema(many=True, only=["account_email", "cache_path"]).dump(accounts_obj)).get("data")
+        ACCOUNTS_EMAILS = [item.get("account_email").split("@")[0] for item in accounts_dict]
 
-        # This chunk of code may require user intervention to loging to Spotify API 
-        # ccm = spotipy.SpotifyClientCredentials(client_id=os.environ.get("SPOTIPY_CLIENT_ID"),client_secret=os.environ.get("SPOTIPY_CLIENT_SECRET"))
-        # sp_ccm = spotipy.Spotify(client_credentials_manager=ccm, requests_timeout=10, retries=10)
-        # playlists_n_tracks = {value:sp_ccm.playlist(key)["tracks"]["total"] for key,value in server.config.get("STUDY_PLAYLISTS").items()}
+    # Approach may not work if no spotify account has
+    # been linked, perhaps disabling the analytics dashboard
+    # for the first run and then enabled once account has been linked
+    # There is a risk for the app not initialising since the following request
+    # may hang and wait until spotify allow making calls again. 
+    # try:
+    #     cache_path = next(iter(accounts_dict))["cache_path"]
+    #     progress_tracking = get_context_tracks_id(cache_path, server)
+    #     print("Progress tracking information loaded successfully")
+    # except Exception as e:
+    #     print(f"Error while loading progress tracking, setting default instead: {e}")
+    #     progress_tracking = {"Participation Time":pd.Timedelta(days=int(server.config.get("BATCH_PERIOD_DAYS"))), "Affective":[], "Eudaimonic":[],"Goal-Attainment":[]}
 
-    # Hardcoding track numbers per playlist as workaround
-    # to avoid the script hanging  and waiting for authorization
-    # playlists_n_tracks = {"Affective":170, "Eudaimonic":149,"Goal-Attainment":167}
-    progress_tracking = {"Participation Time":pd.Timedelta(days=int(server.config.get("BATCH_PERIOD_DAYS"))), "Affective":170, "Eudaimonic":149,"Goal-Attainment":167}
+    progress_tracking = {"Participation Time":pd.Timedelta(days=int(server.config.get("BATCH_PERIOD_DAYS"))), "Affective":[], "Eudaimonic":[],"Goal-Attainment":[]}
+
 
     dash_app.layout = dbc.Container(
         [
@@ -678,7 +763,7 @@ def create_dash_app(server):
                 [
                     dbc.Col(
                         dcc.Dropdown(
-                            ["All"] + accounts_email,
+                            ["All"] + ACCOUNTS_EMAILS,
                             "All",
                             clearable=False,
                             id="accounts-dropdown",
@@ -688,7 +773,7 @@ def create_dash_app(server):
                     ),
                     dbc.Col(
                         dcc.Dropdown(
-                            ["Affective", "Eudaimonic", "Goal-Attainment", "Other"],
+                            CONTEXTS,
                             "Affective",
                             clearable=False,
                             id="context-dropdown",
@@ -870,8 +955,6 @@ def create_dash_app(server):
         # Unpack scores and top table data
         data_scores, columns_scores = table_scores
         data_top, columns_top = table_top
-
-        print(type(barchart))
 
         return (
             barchart,

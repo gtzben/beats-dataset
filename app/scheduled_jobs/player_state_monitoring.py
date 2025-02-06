@@ -62,7 +62,7 @@ def __get_spotify_client(email):
     """
     """
     #
-    scope = "user-read-playback-state user-read-email"
+    scope = "user-read-playback-state user-read-email playlist-read-private"
 
     #
     try:

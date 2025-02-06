@@ -41,7 +41,8 @@ class SpotifyLogin(Resource):
         if 'uuid' not in session:
             session['uuid'] = str(uuid.uuid4())
 
-        scope = "user-read-playback-state user-read-email"
+        # scope = "user-read-playback-state user-read-email"
+        scope = "user-read-playback-state user-read-email playlist-read-private"
 
         cache_path = os.path.join(cache_dir, f".cache-{session['uuid']}")
         cache_handler = spotipy.cache_handler.CacheFileHandler(cache_path=cache_path)
