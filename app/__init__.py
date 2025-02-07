@@ -6,7 +6,9 @@ Author: Benjamin Gutierrez Serafin
 Date: 2024-11-18
 """
 
-import os, logging, datetime
+import os, logging, datetime, spotipy, time
+import pandas as pd
+from multiprocessing import Process, Manager
 
 from flask import Flask, request
 from flask_migrate import Migrate
@@ -21,7 +23,7 @@ from app.routes.api import api_bp
 from app.routes.info import info_bp
 from app.routes.portal import portal_bp
 from app.routes.survey import survey_bp
-from app.routes.analytics.plots import create_dash_app
+from app.routes.analytics.dashboard import create_dash_app
 
 
 from cryptography.fernet import Fernet
@@ -60,8 +62,20 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     app.cli.add_command(run_daily_jobs)
     app.cli.add_command(reset_db)
 
+    # Request Tracks URI. If quota has exceeded
+    # or there is some issue with authorization 
+    # causing the code to stop and preventing the app
+    # from initialising, use a timeout to force the
+    # app to start if takes longer than the expected.
+    try:
+        progress_tracking = __get_tracking_data_with_timeout(app, timeout=90)
+        print("Progress tracking information loaded successfully")
+    except Exception as e:
+        print(f"Error while loading progress tracking, setting default instead: {e}")
+        progress_tracking = {"Participation Time":pd.Timedelta(days=int(app.config.get("BATCH_PERIOD_DAYS"))),
+                              "Affective":[], "Eudaimonic":[],"Goal-Attainment":[]}
 
-    create_dash_app(app)
+    create_dash_app(app, progress_tracking)
 
     return app
 
@@ -128,3 +142,54 @@ def __register_extensions(app):
         return jti in black_list
 
     return
+
+def __get_study_tracking_data(app, return_dict):
+    """
+    """
+
+    # Playlist are public, thus no authorization is required.
+    ccm = spotipy.SpotifyClientCredentials(client_id=app.config.get("SPOTIPY_CLIENT_ID"), client_secret=app.config.get("SPOTIPY_CLIENT_SECRET"))
+    sp_ccm = spotipy.Spotify(client_credentials_manager=ccm, requests_timeout=5, retries=5)
+
+    progress_tracking = {"Participation Time":pd.Timedelta(days=int(app.config.get("BATCH_PERIOD_DAYS"))), "Affective":[], "Eudaimonic":[],"Goal-Attainment":[]}
+    n_uri_fetched = 0
+    for func, pl_uris in app.config.get("STUDY_PLAYLISTS").items():
+        for pl_id in pl_uris:
+            offset = 0
+            function_tracks = []
+            while True:
+                response = sp_ccm.playlist_items(pl_id,offset=offset,
+                                            fields='items.track.id,total',
+                                            additional_types=['track'])
+                if len(response['items']) == 0:
+                    break
+                function_tracks.extend([f"spotify:track:{t['track']['id']}" for t in response['items']])
+                offset += len(response['items'])
+                n_uri_fetched+= len(response['items'])
+                print(f"Track URIs fetched: {n_uri_fetched}")
+                time.sleep(3) # Avoid too many request wait 3 seconds.
+                
+            progress_tracking[func].extend(function_tracks)
+
+        print(f"Loaded URI tracks in {func} playlists")
+
+    return_dict["data"] = progress_tracking
+
+    return 
+
+def __get_tracking_data_with_timeout(app, timeout=60):
+    """Fetch playlist items but enforces a strict timeout."""
+    with Manager() as manager:
+        return_dict = manager.dict()  # Shared dictionary for results
+        process = Process(target=__get_study_tracking_data, args=(app, return_dict))
+    
+        process.start()  # Start the process
+        process.join(timeout)  # Wait for process to finish within timeout
+        
+        if process.is_alive():  
+            process.terminate()  # Forcefully kill process if it exceeds timeout
+            process.join()  
+            raise Exception(f"Spotify API request timed out after {timeout} seconds.")
+        
+        return return_dict.get("data", None)  # Return fetched data if successful
+
