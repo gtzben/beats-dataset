@@ -43,7 +43,7 @@ def score_tipi(df_grouped):
     return scores
 
 
-def score_panas(df_grouped):
+def score_panas(df_grouped, pre_study=True):
     """
     Compute PANAS scores.
     Postive Affect Score (PAS): 1, 3, 5, 9, 10, 12, 14, 16, 17, 19
@@ -51,9 +51,14 @@ def score_panas(df_grouped):
 
     """
 
+    if pre_study:
+        prefix="PR"
+    else:
+        prefix="PO"
+
     panas_scores = {
-        ("PANAS","PAS"): lambda df: df.loc[df["item"].isin([1, 3, 5, 9, 10, 12, 14, 16, 17, 19])]["response"].sum(),
-        ("PANAS", "NAS"): lambda df: df.loc[df["item"].isin([2, 4, 6, 7, 8, 11, 13, 15, 18, 20])]["response"].sum()
+        ("PANAS",f"{prefix}P"): lambda df: df.loc[df["item"].isin([1, 3, 5, 9, 10, 12, 14, 16, 17, 19])]["response"].sum(),
+        ("PANAS", f"{prefix}N"): lambda df: df.loc[df["item"].isin([2, 4, 6, 7, 8, 11, 13, 15, 18, 20])]["response"].sum()
     }
 
     # Make sure responses are int
@@ -64,7 +69,7 @@ def score_panas(df_grouped):
 
     return scores
 
-def score_pss(df_grouped):
+def score_pss(df_grouped, pre_study=True):
     """
     Compute PSS score.
     Reversed items: 4,5,6,7,9,10,13
@@ -72,8 +77,13 @@ def score_pss(df_grouped):
     Reverse score: recode a 4 with a 0, a 3 with a 1, a 2 stays 2, 1 with a 3 and 4 with a 0)
     """
 
+    if pre_study:
+        prefix="PR"
+    else:
+        prefix="PO"
+
     pss_score = {
-        ("PSS",""): lambda df: ((df.loc[df["item"].isin([1,2,3,8,11,12,14])]["response"].sum())+
+        ("PSS",f"{prefix}"): lambda df: ((df.loc[df["item"].isin([1,2,3,8,11,12,14])]["response"].sum())+
                                 ((5-df.loc[df["item"].isin([4,5,6,7,9,10,13])]["response"]).sum()))
     }
 
@@ -86,14 +96,19 @@ def score_pss(df_grouped):
     return score
 
 
-def score_phq9(df_grouped):
+def score_phq9(df_grouped, pre_study=True):
     """
     Compute PHQ9 score.
     
     """
 
+    if pre_study:
+        prefix="PR"
+    else:
+        prefix="PO"
+
     phq9_score = {
-        ("PHQ9",""): lambda df: df["response"].sum()}
+        ("PHQ9",f"{prefix}"): lambda df: df["response"].sum()}
 
     # Make sure responses are int
     df_grouped["response"] = df_grouped["response"].astype(int)

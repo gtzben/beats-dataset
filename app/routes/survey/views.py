@@ -238,8 +238,12 @@ def pre_study():
                     survey_record.rename(index={0: f"P{str(session[f'{request.blueprint}_participant_id']).zfill(2)}"}, inplace=True) 
                     survey_record.index.name = "participant_id"
 
+                    name_survey = key_survey.split("_")[1]
+                    if name_survey in ["panas", "pss", "phq9"]:
+                        name_survey = "pre_" + name_survey
+
                     # If psychometrics file exist add new record
-                    survey_file = os.path.join(PSCYHOMETRICS_DIR, key_survey.split("_")[1] + ".csv")
+                    survey_file = os.path.join(PSCYHOMETRICS_DIR, name_survey + ".csv")
                     if os.path.exists(survey_file):
                         df_survey = pd.read_csv(survey_file, index_col=0)
                         df_survey = pd.concat([df_survey, survey_record])

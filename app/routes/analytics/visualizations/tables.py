@@ -94,11 +94,44 @@ def get_scores_psychometrics(df_answers):
     scores_all = []
     for name, group in grouped:
         scores_participant = {"ID": name}
+
+        # Identify distinct timestamps for pre/post classification
+        unique_times = sorted(group["response_created_at"].unique())
+
+        if len(unique_times) == 1:
+            pre_time = unique_times[0]
+            post_time = None  # No post-study responses yet
+        elif len(unique_times) >= 2:
+            pre_time = unique_times[0]
+            post_time = unique_times[1]  # Take the second timestamp as post-study
+
         for survey, func_score in questionnaire_scoring.items():
             # Get respones for items of current questionnaire and participant
             group_survey = group[group["questionnaire"]==survey].copy()
-            survey_scores = func_score(group_survey)
-            scores_participant = {**scores_participant, **survey_scores}
+
+            if survey in ["panas", "pss", "phq9"]:
+                # Separate pre-study and post-study responses
+                pre_study = group_survey[group_survey["response_created_at"] == pre_time].copy()
+                post_study = group_survey[group_survey["response_created_at"] == post_time].copy() if post_time else pd.DataFrame()
+
+                # Compute scores separately
+                if not pre_study.empty:
+                    pre_scores = func_score(pre_study, pre_study=True)
+                    scores_participant = {**scores_participant, **pre_scores}
+
+                if not post_study.empty:
+                    post_scores = func_score(post_study, pre_study=False)
+                    scores_participant = {**scores_participant, **post_scores}
+                else:
+                    # Ensure post-study columns exist but are empty
+                    for key in func_score(pd.DataFrame(columns=group_survey.columns), pre_study=False).keys():
+                        scores_participant[key] = None
+            
+            else:
+                # Compute scores normally for other questionnaires
+                survey_scores = func_score(group_survey)
+                scores_participant = {**scores_participant, **survey_scores}
+
         # Include all in same list    
         scores_all.append(scores_participant)
 
