@@ -18,11 +18,14 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from marshmallow import ValidationError
 from app.routes.api.schemas.participant import ParticipantSchema, ParticipantFlatSchema
 from app.routes.api.schemas.link import LinkSchema
+from app.routes.api.schemas.survey import PostSurveySchema
 
 from app.routes.api.models.user import User
 from app.routes.api.models.participant import Participant
 from app.routes.api.models.device import Device
 from app.routes.api.models.spotifyaccount import SpotifyAccount
+from app.routes.api.models.survey import Questionnaire, Response
+
 
 
 from app.utils import generate_token, verify_token, send_email, encrypt_email, hash_email, decrypt_email
@@ -430,18 +433,20 @@ class ParticipantLogin(Resource):
             return {'message':'PID or password is incorrect'}, HTTPStatus.UNAUTHORIZED
         
         if participant.is_verified is False:
-            return {'message': 'The participant account is not verified yet'}, HTTPStatus.FORBIDDEN
-
-        if participant.is_active:      
+            return {'message': 'The participant account is not verified yet'}, HTTPStatus.FORBIDDEN\
+        
+        if not participant.is_active and not (participant.is_withdrawn or participant.is_completed):
+            self.logger.info(f"Participant {pid} has sign in for the pre-study flow!")
+        elif participant.is_active and (participant.is_withdrawn or participant.is_completed): # Conclude experiment if withdrawn or completed
             self.logger.info(f"Participant {pid} has sign in for the post-study flow!")
-            return {"is_active":participant.is_active, "is_withdrawn":participant.is_withdrawn, "is_completed":participant.is_completed, "id":participant.id}, HTTPStatus.OK
+        elif (not participant.is_active) and (participant.is_withdrawn):
+            self.logger.info(f"Participant {pid} has opted out and has returned device already")
+            return {"message": "Participant opted out and device returned already."}, HTTPStatus.CONFLICT
         else:
-            if participant.spotify_account == participant.device_serial == None:
-                self.logger.info(f"Participant {pid} has sign in for the pre-study flow!")
-                return {"is_active":participant.is_active, "is_withdrawn":participant.is_withdrawn, "is_completed":participant.is_completed, "id":participant.id}, HTTPStatus.OK
-            else:
-                self.logger.warning(f"Participant {pid} tried to login once again after completing the participation period")
-                return {"message": "Participant has already concluded the experiment"}, HTTPStatus.CONFLICT
+            self.logger.warning(f"Participant {pid} has not completed the experiment. If he/she no longer wishes to continue, he/she must withdraw.")
+            return {"message": "Participant has not completed the experiment. Wait or opt out the experiment"}, HTTPStatus.CONFLICT
+        
+        return {"is_active":participant.is_active, "is_withdrawn":participant.is_withdrawn, "is_completed":participant.is_completed, "id":participant.id}, HTTPStatus.OK
 
 
 
@@ -605,24 +610,47 @@ class ParticipantConcludeResource(Resource):
     def __init__(self, **kwargs):
         self.logger = current_app.logger
 
-    def post(self):
+    def post(self, participant_pid):
 
-        json_data = request.get_json()
+        participant = Participant.get_by_pid(participant_pid)
 
-        try:
-            data = ParticipantSchema(only=(['pid'])).load(json_data)
-        except ValidationError as errors:
-            return {'message': 'Validation errors', 'errors': errors.messages}, HTTPStatus.BAD_REQUEST
-        
-        pid = data.get("pid")
-
-        participant = Participant.get_by_pid(pid=pid)
         if participant is None:
-            return {'message': f"Participant {pid} not found in DB"}, HTTPStatus.NOT_FOUND
+            return {'message': f"Participant {participant_pid} not found in DB"}, HTTPStatus.NOT_FOUND
         
         if not participant.is_verified:
             return {'message': "Participant has not been verified"}, HTTPStatus.BAD_REQUEST
+
+        if (not participant.is_active) and participant.is_completed:
+            return {'message': "Participant has already completed the experimental period and has already completed the post-study's questionnaires"}, HTTPStatus.CONFLICT
         
+        if not participant.is_withdrawn:
+
+            json_data = request.get_json()
+            #
+            try:
+                survey_data = PostSurveySchema().load(json_data)
+            except ValidationError as errors:
+                self.logger.error(f"Validation error when submitting surveys data: {errors.messages}")
+                return {'message': 'Validation errors', 'errors':errors.messages}, HTTPStatus.BAD_REQUEST
+            
+            # Update followup response to participant table 
+            followup = survey_data.pop("survey_followup_data", False)
+            self.logger.debug(f"Participant {participant_pid} interested in followup study? {followup}")
+
+            #
+            survey_responses = []
+            for survey, responses in survey_data.items():
+                survey_name = survey.split("_")[1]
+                questions = Questionnaire.get_questions(name=survey_name)
+                for q in questions:
+                    q_item = f"{survey_name}_{q.n_item}"
+                    response = {"participant_pid":participant_pid, "question_id":q.id, "response":responses[q_item]}
+                    survey_responses.append(response)   
+            #
+            response_obj = Response()
+            response_obj.bulk_insert(survey_responses)
+        
+        # Proceed by removing device and account
         if participant.device_serial is not None:
                 device = Device.get_by_serial(serial=participant.device_serial)
                 device.is_assigned = False
@@ -640,7 +668,7 @@ class ParticipantConcludeResource(Resource):
         participant.is_active=False
         participant.save()
 
-        self.logger.info(f"Participant {pid} is no longer active and both device and account have been unlinked")
+        self.logger.info(f"Participant {participant_pid} is no longer active and both device and account have been unlinked")
 
         return {"message": "Resource were successfully unpair from participant and is now innactive"}, HTTPStatus.OK 
 

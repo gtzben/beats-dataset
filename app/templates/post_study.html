@@ -1,17 +1,116 @@
+
 {% extends "base.html" %}
 
 {% block content %}
 
-<div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: auto;"></div>
+{% macro heading_row(headings) %}
+<tr>
+    {%for header in headings%}
+    <th class="text-center">{{ header | replace("\n", "<br>") | safe }}</th>
+    {% endfor %}
+</tr>
+{% endmacro %}
 
-<div style="max-width: 600px; margin: auto;">
-    <h2>Congratulations {{session.survey_participant_pid}} on Successfully Completing the Study!</h2>
-    <p>
-        We sincerely appreciate your dedication and effort in helping us collect valuable data for our research.
-    <p>
-        The device and account provided have now been unliked to your profile, your contribution to the study is officially completed.
-    </p>
-    <p>Thank you for your outstanding commitment!</p>
+{% macro data_rows(data) %}
+{% for row in data %}
+<tr>
+    <td class="text-start" style="width:30%">{{ row[0] }}</td> <!-- Question label -->
+    {% for radio in row[1:] %}
+    <td class="text-center align-middle">
+        <label>
+            {{ radio }} <!-- Render the individual radio button -->
+        </label>
+    </td>
+    {% endfor %}
+</tr>
+{% endfor %}
+{% endmacro %}
+
+{% macro data_table(headings, data) %}
+<div class="table-responsive-sm">
+    <table class="table table-sm table-hover caption-top">
+        <caption>
+            <ul>
+                <li>{{subform_instructions[0]}}</li>
+                <li><b>{{subform_instructions[1]}}</b></li>
+            </ul>
+        </caption>
+        <thead class="table-secondary sticky-top top-0">
+            {{ heading_row(headings) }}
+        </thead>
+        <tbody class="table-group-divider">
+            {{ data_rows(data) }}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+
+<div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: auto;">
+
+    <form method="POST">
+        {{ form.csrf_token }}
+        {{ form.hidden_tag() }}
+
+        {% if current_page == 1 %}
+        <div style="max-width: 600px; margin: auto;">
+            <h2>You're Almost Done, {{session.survey_participant_pid}}</h2>
+            <p>
+                Thank you for your continued participation! You’ve made great progress, and we truly appreciate your effort.
+            </p>
+            <p>
+                Before concluding your participation, we kindly ask you to complete a few final questionnaires.
+                Your responses are crucial in helping us gain deeper insights into our research.
+            </p>
+            <p>Thank you for your cooperation!</p>
+        </div>
+
+
+        {% elif current_page == 2 %}
+        <h2>Positive and Negative Affect Schedule (PANAS-SF)</h2>
+        {{ data_table(subform_headers, subform_values) }}
+
+        {% elif current_page == 3 %}
+        <h2>Perceived Stress Scale - (PSS)</h2>
+        {{ data_table(subform_headers, subform_values) }}
+
+        {% elif current_page == 4 %}
+        <h2>Patient Health Questionnaire - (PHQ-9)</h2>
+        {{ data_table(subform_headers, subform_values) }}
+
+        {% elif current_page == 5 %}
+        <h2>Follow-up Study</h2>
+        <p>
+            {{subform_instructions[0]}} <br>
+            {{subform_instructions[1]}}
+        </p>
+        <br>
+        <p>{{form.followup.interested.label}}: {{ form.followup.interested() }}</p>
+
+        {% elif current_page == 6 %}
+        <div style="max-width: 600px; margin: auto;">
+            <h2>Congratulations {{session.survey_participant_pid}} on Successfully Completing the Study!</h2>
+            <p> We sincerely appreciate your dedication and effort in helping us collect valuable data for our research.</p>
+            <p>The device and account provided have now been unliked to your profile, your contribution to the study is officially completed.</p>
+            <p>Thank you for your outstanding commitment!</p>
+        </div>
+
+        {% endif %}
+
+        <div>
+            {% if current_page != 6 %}
+            {% if current_page > 1 %}
+            <button type="submit" class="btn btn-secondary btn-lg" name="Back">Back</button>
+            {% endif %}
+            {% if current_page < 5 %} <button type="submit" class="btn btn-secondary btn-lg" name="Next">Next</button>
+                {% else %}
+                <button type="submit" class="btn btn-primary btn-lg" name="Submit">Submit</button>
+                {% endif %}
+                {% endif %}
+        </div>
+
+    </form>
+
 </div>
 
 {% endblock %}

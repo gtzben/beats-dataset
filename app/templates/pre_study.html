@@ -5,7 +5,7 @@
 {% macro heading_row(headings) %}
 <tr>
     {%for header in headings%}
-    <th class="text-center">{{ header }}</th>
+    <th class="text-center">{{ header | replace("\n", "<br>") | safe }}</th>
     {% endfor %}
 </tr>
 {% endmacro %}
@@ -31,7 +31,7 @@
         <caption>
             <ul>
                 <li>{{subform_instructions[0]}}</li>
-                <li>{{subform_instructions[1]}}</li>
+                <li><b>{{subform_instructions[1]}}</b></li>
             </ul>
         </caption>
         <thead class="table-secondary sticky-top top-0">

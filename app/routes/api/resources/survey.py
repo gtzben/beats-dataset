@@ -14,8 +14,8 @@ from flask_restful import Resource
 
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from app.routes.api.schemas.survey import SurveySchema
-from app.routes.api.models.survey import Question, Questionnaire, Response
+from app.routes.api.schemas.survey import PreSurveySchema
+from app.routes.api.models.survey import Questionnaire, Response
 from app.routes.api.models.participant import Participant
 
 
@@ -48,7 +48,7 @@ class SurveyResponsesResource(Resource):
 
         #
         try:
-            survey_data = SurveySchema().load(json_data)
+            survey_data = PreSurveySchema().load(json_data)
         except ValidationError as errors:
             self.logger.error(f"Validation error when submitting surveys data: {errors.messages}")
             return {'message': 'Validation errors', 'errors':errors.messages}, HTTPStatus.BAD_REQUEST
@@ -77,6 +77,6 @@ class SurveyResponsesResource(Resource):
         participant.is_active=True
         participant.save()
 
-        self.logger.debug(f"Participant {participant_pid} has completed the questionnaires and now is active.")
+        self.logger.info(f"Participant {participant_pid} has completed the questionnaires and now is active.")
 
         return {"message":"Responses were received successfully!"}, HTTPStatus.OK

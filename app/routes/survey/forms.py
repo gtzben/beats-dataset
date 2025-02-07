@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, RadioField, SelectField, FormField, HiddenField, SelectMultipleField
 from wtforms.widgets import ListWidget, CheckboxInput
-from wtforms.validators import DataRequired, Email, Optional
+from wtforms.validators import DataRequired, InputRequired, Email, Optional
 
 class ParticipantLoginForm(FlaskForm):
     pid = StringField('Participant ID', validators=[DataRequired()])
@@ -11,15 +11,18 @@ class ParticipantLoginForm(FlaskForm):
 class Demographics(FlaskForm):
     demo_1 = SelectField("What best describes your gender?",
                     choices=[
+                            (None, '--'),
                             ('female', 'Female'),
                             ('male', 'Male'),
                             ('other', 'Prefer to self-describe'),
                             ('no-answer', 'Prefer not to answer')
                         ],
+                        default=None,
                         validators=[DataRequired()])
     demo_2 = StringField("If you selected 'Prefer to self-describe', please specify:", validators=[Optional()])
     demo_3 = SelectField("What is your age?",
                     choices=[
+                            (None, '--'),
                             ('<15', '15 years or under'),
                             ('16-24', '16-24'),
                             ('25-34', '25-34'),
@@ -27,9 +30,11 @@ class Demographics(FlaskForm):
                             ('>=50', '50 years or over'),
                             ('no-answer', 'Prefer not to answer')
                         ],
+                        default=None,
                         validators=[DataRequired()])
     demo_4 = SelectField("What is your ethnic background?",
                     choices=[
+                            (None, '--'),
                             ('white', 'White / Caucasian'),
                             ('asian_east', 'Asian - Eastern'),
                             ('asian-south', 'Asian - South'),
@@ -40,10 +45,12 @@ class Demographics(FlaskForm):
                             ('other', 'Other'),
                             ('no-answer', 'Prefer not to answer'),
                         ],
+                        default=None,
                         validators=[DataRequired()])
     demo_5 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
     demo_6 = SelectField("What is the highest level of education you have achieved?",
                     choices=[
+                            (None, '--'),
                             ('phd', 'PhD degree'),
                             ('master', "Master's degree"),
                             ('bachelor', "Bachelor's degree"),
@@ -51,12 +58,15 @@ class Demographics(FlaskForm):
                             ('other', 'Other'),
                             ('no_answer', 'Prefer not to answer'),
                         ],
+                        default=None,
                         validators=[DataRequired()])
     demo_7 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
     demo_8 = SelectField("What is your mother language?",
                     choices=[
+                            (None, '--'),
                             ('english', 'English'),
                             ('french', "French"),
+                            ('german', "German"),
                             ('spanish', "Spanish"),
                             ('italian', 'Italian'),
                             ('portuguese', 'Portuguese'),
@@ -65,11 +75,13 @@ class Demographics(FlaskForm):
                             ('other', 'Other'),
                             ('no_answer', 'Prefer not to answer'),
                         ],
+                        default=None,
                         validators=[DataRequired()])
     demo_9 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
 
     demo_10 = SelectField("What is your employment status?",
                     choices=[
+                            (None, '--'),
                             ('full-time', 'Full-time'),
                             ('part-time', "Part-time"),
                             ('student', "Student"),
@@ -78,6 +90,7 @@ class Demographics(FlaskForm):
                             ('other', 'Other'),
                             ('no_answer', 'Prefer not to answer'),
                         ],
+                        default=None,
                         validators=[DataRequired()])
     demo_11 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
 
@@ -85,27 +98,33 @@ class Demographics(FlaskForm):
 
     demo_13 = SelectField("In your main job, what is the address of your workplace?",
                     choices=[
+                            (None, '--'),
                             ('home', 'Mainly work at or from home'),
                             ('office', "Office/Institution"),
                             ('no-fixed-place', "No fixed place")
                         ],
+                        default=None,
                         validators=[DataRequired()])
 
     demo_14 = SelectField("How satisfied are you with your work environment?",
                     choices=[
+                            (None, '--'),
                             ('very-satisfied', 'Very satisfied'),
                             ('satisfied', "Satisfied"),
                             ('neutral', "Neutral"),
                             ('unsatisfied', "Unsatisfied"),
                             ('very-unsatisfied', "Very unsatisfied")
                         ],
+                        default=None,
                         validators=[DataRequired()])
 
     demo_15 = SelectField("When working is there people around you?",
                     choices=[
+                            (None, '--'),
                             ('yes', 'Yes'),
                             ('no', "No"),
                         ],
+                        default=None,
                         validators=[DataRequired()])
     demo_16 = SelectMultipleField(
         'Which of the following aptitudes are essential for your job? (Select all that apply):',
@@ -137,38 +156,46 @@ class Demographics(FlaskForm):
 
     demo_18 = SelectField("How physically demanding is your job?",
                     choices=[
+                            (None, '--'),
                             ('sedentary', 'Sedentary: Little to no physical effort required.'),
                             ('light', "Light: Requires light physical effort, such as standing or walking."),
                             ('medium', "Medium: Involves moderate physical effort, such as regular lifting or movement."),
                             ('heavy', "Heavy: Demands significant physical effort, such as frequent lifting or strenuous activity."),
                             ('very-heavy', "Very Heavy: Requires continuous and intense physical effort.")
                         ],
+                        default=None,
                         validators=[DataRequired()])
 
     demo_19 = SelectField("Which of the following best describes your primary interactions at work?",
                     choices=[
+                            (None, '--'),
                             ('take-instructions', 'Taking instructions from supervisors'),
                             ('serving-others', "Serving or attending to others' needs"),
                             ('supervising-others', "Supervising or directing others’ work"),
                             ('instructing-others', "Instructing or training others")
                         ],
+                        default=None,
                         validators=[DataRequired()])
 
     demo_20 = SelectField("How would you describe your proficiency with technology?",
                     choices=[
+                            (None, '--'),
                             ('minimal', 'Minimal (basic use of smartphones or computers)'),
                             ('basic', "Basic (comfortable with everyday apps, minor troubleshooting)"),
                             ('intermidiate', "Intermediate (uses complex tools, self-learns software, solves most issues)"),
                             ('advanced', "Advanced (works/studies in tech, uses advanced software, do some coding)"),
                             ('expert', "Expert (specialised in tech, advanced coding, system design, state-of-the-art knowledge)")
                         ],
+                        default=None,
                         validators=[DataRequired()])
 
     demo_21 = SelectField("Which hand do you use less often or is considered your non-dominant hand?",
                     choices=[
+                            (None, '--'),
                             ('left', 'Left'),
                             ('right', "Right")
                         ],
+                        default=None,
                         validators=[DataRequired()])
 
     demo_22 = SelectMultipleField(
@@ -193,16 +220,19 @@ class Demographics(FlaskForm):
 
     demo_24 = SelectField("How likely are you to use a music streaming service on a typical day?",
                     choices=[
+                            (None, '--'),
                             ('extremely-likely', 'Extremely likely'),
                             ('very-likely', "Very likely"),
                             ('moderately-likely', " Moderately likely"),
                             ('slightly-likely', " Slightly likely"),
                             ('not-likely', " Not at all likely")
                         ],
+                        default=None,
                         validators=[DataRequired()])
 
     demo_25 = SelectField("Which is your preferred music streaming provider?",
                     choices=[
+                            (None, '--'),
                             ('spotify', 'Spotify'),
                             ('apple-music', "Apple Music"),
                             ('tidal', "Tidal"),
@@ -211,6 +241,7 @@ class Demographics(FlaskForm):
                             ('youtube-music', "YouTube Music"),
                             ('other', "Other")
                         ],
+                        default=None,
                         validators=[DataRequired()])
     demo_26 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
     
@@ -251,32 +282,32 @@ class PANAS(FlaskForm):
     panas_20 = RadioField("20.- Afraid.", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
 
 class PSS(FlaskForm):
-    pss_1 = RadioField("1.- How often have you been upset because of something that happened unexpectedly?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_2 = RadioField("2- How often have you felt that you were unable to control the important things in your life?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_3 = RadioField("3.- How often have you felt nervous and 'stressed'?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_4 = RadioField("4.- How often have you dealt successfully with irritating life hassles?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_5 = RadioField("5.- How often have you felt that you were effectively coping with important changes that were ocurring in your life?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_6 = RadioField("6.- How often have you felt confident about your ability to handle your personal problems?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_7 = RadioField("7.- How often have you felt that things were going your way?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_8 = RadioField("8.- How often have you found that you could not cope with all the things that you had to do?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_9 = RadioField("9.- How often have you been able to control irritation in your life?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_10 = RadioField("10.- How often have you felt that you were on top of things?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_11 = RadioField("11.- How often have you been angered because of things that happened that were outside your control?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_12 = RadioField("12- How often have you found yourself thinking about things that you have to accomplish?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_13 = RadioField("13.- How often have you been able to control the way you spend your time?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
-    pss_14 = RadioField("14.- How often have you felt difficulties were piling up so high that you could not overcome them?", choices=[(i,i) for i in range(1,6)], validators=[DataRequired()])
+    pss_1 = RadioField("1.- How often have you been upset because of something that happened unexpectedly?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_2 = RadioField("2- How often have you felt that you were unable to control the important things in your life?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_3 = RadioField("3.- How often have you felt nervous and 'stressed'?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_4 = RadioField("4.- How often have you dealt successfully with irritating life hassles?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_5 = RadioField("5.- How often have you felt that you were effectively coping with important changes that were ocurring in your life?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_6 = RadioField("6.- How often have you felt confident about your ability to handle your personal problems?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_7 = RadioField("7.- How often have you felt that things were going your way?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_8 = RadioField("8.- How often have you found that you could not cope with all the things that you had to do?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_9 = RadioField("9.- How often have you been able to control irritation in your life?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_10 = RadioField("10.- How often have you felt that you were on top of things?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_11 = RadioField("11.- How often have you been angered because of things that happened that were outside your control?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_12 = RadioField("12- How often have you found yourself thinking about things that you have to accomplish?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_13 = RadioField("13.- How often have you been able to control the way you spend your time?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
+    pss_14 = RadioField("14.- How often have you felt difficulties were piling up so high that you could not overcome them?", choices=[(i,i) for i in range(5)], validators=[DataRequired()])
 
 
 class PHQ9(FlaskForm):
-    phq9_1 = RadioField("1.- Little interest or pleasure in doing things.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
-    phq9_2 = RadioField("2- Feeling down, depressed, or hopeless.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
-    phq9_3 = RadioField("3.- Trouble falling or staying asleep, or sleeping too  much.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
-    phq9_4 = RadioField("4.- Feeling tired or having little energy.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
-    phq9_5 = RadioField("5.- Poor appetite or overeating.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
-    phq9_6 = RadioField("6.- Feeling bad about yourself or that you are a failure or have let yourself or your family down.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
-    phq9_7 = RadioField("7.- Trouble concentrating on things, such as reading the newspaper or watching television.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
-    phq9_8 = RadioField("8.- Moving or speaking so slowly that other people could have noticed? Or the opposite, bing so fidgety or restless that you have been moving around a lot more than usual.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
-    phq9_9 = RadioField("9.- Thoughts that you would be better off dead or of hurting yourself in some way.", choices=[(i,i) for i in range(1,5)], validators=[DataRequired()])
+    phq9_1 = RadioField("1.- Little interest or pleasure in doing things.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
+    phq9_2 = RadioField("2- Feeling down, depressed, or hopeless.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
+    phq9_3 = RadioField("3.- Trouble falling or staying asleep, or sleeping too  much.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
+    phq9_4 = RadioField("4.- Feeling tired or having little energy.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
+    phq9_5 = RadioField("5.- Poor appetite or overeating.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
+    phq9_6 = RadioField("6.- Feeling bad about yourself or that you are a failure or have let yourself or your family down.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
+    phq9_7 = RadioField("7.- Trouble concentrating on things, such as reading the newspaper or watching television.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
+    phq9_8 = RadioField("8.- Moving or speaking so slowly that other people could have noticed? Or the opposite, bing so fidgety or restless that you have been moving around a lot more than usual.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
+    phq9_9 = RadioField("9.- Thoughts that you would be better off dead or of hurting yourself in some way.", choices=[(i,i) for i in range(4)], validators=[DataRequired()])
 
 
 class STOMPR(FlaskForm):
@@ -347,7 +378,18 @@ class GMS(FlaskForm):
 
     gms_39 = StringField("Best Played Instrument", validators=[DataRequired()])
 
-class BEATS_Psychometrics(FlaskForm):
+class FollowUp(FlaskForm):
+    interested = SelectField("Would you be interested in participating in a follow-up study?",
+                    choices=[
+                            (None, '--'),
+                            (True, "Yes, I’m interested"),
+                            (False, 'No, I’m not interested')],
+                    default=None,
+                    validators=[InputRequired()],
+                    coerce=lambda x: x == 'True')
+    
+
+class PreStudy_Psychometrics(FlaskForm):
     demo = FormField(Demographics)
     tipi = FormField(TIPI)
     panas = FormField(PANAS)
@@ -357,6 +399,16 @@ class BEATS_Psychometrics(FlaskForm):
     gms = FormField(GMS)
     current_page = HiddenField(default="1")  # Track the current page
     submit = SubmitField("Submit")
+
+class PostStudy_Psychometrics(FlaskForm):
+    panas = FormField(PANAS)
+    pss = FormField(PSS)
+    phq9 = FormField(PHQ9)
+    followup = FormField(FollowUp)
+    current_page = HiddenField(default="1")  # Track the current page
+    submit = SubmitField("Submit")
+
+
 
 
 

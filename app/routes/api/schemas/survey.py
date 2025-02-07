@@ -33,7 +33,7 @@ def validate_survey_responses(responses_dict, survey_name):
             raise ValidationError(f"Invalid item name '{item}'. Each item name must follow the pattern: {survey_name}_<item_number>.")
 
 
-class SurveySchema(Schema):
+class PreSurveySchema(Schema):
     survey_demo_data = fields.Dict(validate=lambda responses_dict: validate_survey_responses(responses_dict, "demo"))
     survey_tipi_data = fields.Dict(validate=lambda responses_dict: validate_survey_responses(responses_dict, "tipi"))
     survey_panas_data = fields.Dict(validate=lambda responses_dict: validate_survey_responses(responses_dict, "panas"))
@@ -42,3 +42,8 @@ class SurveySchema(Schema):
     survey_stompr_data = fields.Dict(validate=lambda responses_dict: validate_survey_responses(responses_dict, "stompr"))
     survey_gms_data = fields.Dict(validate=lambda responses_dict: validate_survey_responses(responses_dict, "gms"))
 
+class PostSurveySchema(Schema):
+    survey_panas_data = fields.Dict(validate=lambda responses_dict: validate_survey_responses(responses_dict, "panas"))
+    survey_pss_data = fields.Dict(validate=lambda responses_dict: validate_survey_responses(responses_dict, "pss"))
+    survey_phq9_data = fields.Dict(validate=lambda responses_dict: validate_survey_responses(responses_dict, "phq9"))
+    survey_followup_data = fields.Boolean(required=True)

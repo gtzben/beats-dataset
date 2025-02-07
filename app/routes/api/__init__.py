@@ -34,7 +34,7 @@ api.add_resource(participant.ParticipantActiveResource, '/participants/<string:p
 api.add_resource(participant.ParticipantLogin, '/participants/login')
 api.add_resource(participant.ParticipantWithdrawResource, '/participants/<string:participant_pid>/withdraw-request')
 api.add_resource(participant.ParticipantExcludeResource, '/participants/exclude/<string:token>')
-api.add_resource(participant.ParticipantConcludeResource, '/participants/conclude')
+api.add_resource(participant.ParticipantConcludeResource, '/participants/<string:participant_pid>/conclude')
 
 
 # Device related resources
