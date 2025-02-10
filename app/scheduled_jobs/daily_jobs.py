@@ -1,4 +1,4 @@
-import os, click, logging
+import os, click, logging, traceback
 import pandas as pd
 from datetime import datetime, timedelta
 
@@ -98,7 +98,8 @@ def daily_physio_transfer(id_participant, spotify_account, pid, device_serial, p
     if len(start_end_sessions)>0:
         LOGGER.info(start_end_sessions)
 
-        signals_session, timestamps, already_transferred = get_files_from_s3_ts_range(pid, device_serial, date, -float("inf"), float("inf"), last_session_ts, offset_minutes=0)
+        signals_session, timestamps, already_transferred = get_files_from_s3_ts_range(pid, device_serial, date, -float("inf"), float("inf"),
+                                                                                       last_session_ts, LOGGER, offset_minutes=0)
 
         if len(signals_session)>0:
             # Assign file name keeping original order
@@ -327,18 +328,30 @@ def run_daily_jobs(all_daily_physio):
     try:
         purge_cache_and_not_verified()
     except Exception as e:
-        LOGGER.error(f"An error occurred while conducting daily cleaning: {e}")
+        LOGGER.error(
+        "An error occurred while conducting daily cleaning:\n"
+        f"Exception: {e}\n"
+        f"Traceback:\n{traceback.format_exc()}"
+    )
 
     #
     try:
         transfer_physio_data(all_daily_physio)
     except Exception as e:
-        LOGGER.error(f"An error occurred while transfering physiological data to app: {e}")
+        LOGGER.error(
+        "An error occurred while transferring physiological data to the app.\n"
+        f"Exception: {e}\n"
+        f"Traceback:\n{traceback.format_exc()}"
+    )
 
     #
     try:
         notify_experiment_completion()
     except Exception as e:
-        LOGGER.error(f"An error occurred while notifying experiment completion data to app: {e}")
+        LOGGER.error(
+        "An error occurred while notifying experiment completion data to app:\n"
+        f"Exception: {e}\n"
+        f"Traceback:\n{traceback.format_exc()}"
+    )
 
         
