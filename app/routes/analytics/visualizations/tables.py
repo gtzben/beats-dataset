@@ -37,7 +37,7 @@ def create_table_progress(server, df, participants, progress_tracking):
                 .reset_index(name="counts")
                 .pivot_table(index="participant_id", columns="context", values="counts")
                 .fillna(0)
-                .drop("Other",axis=1))
+                .drop("Other",axis=1, errors="ignore"))
         # If context not listened by active participants, turn NaNs to 0
         table = pd.concat([table, default_table[~default_table.index.isin(table.index)].dropna()]).fillna(0)
     except Exception as e:

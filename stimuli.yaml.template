@@ -1,0 +1,27 @@
+# Template for defining study playlists and their corresponding track URIs
+# Replace the example values with your own playlist and track URIs
+
+music_function_1:
+  # Replace with your playlist URI
+  playlist_uri_1:
+    # Replace with your tracks URI
+    - track_uri_1
+    - track_uri_2
+    - track_uri_3
+  playlist_uri_2:
+    - track_uri_1
+    - track_uri_2
+
+music_function_2:
+  playlist_uri_1:
+    - your_track_uri_1
+    - your_track_uri_2
+    - your_track_uri_3
+
+music_function_3:
+  your_playlist_uri_1:
+    - your_track_uri_1
+    - your_track_uri_2
+    - your_track_uri_3
+
+# Add more music functions, playlists and tracks as needed

@@ -166,3 +166,4 @@ config.ini
 migrations/
 data/beats.db
 cron_jobs.txt
+stimuli.yaml
