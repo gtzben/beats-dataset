@@ -30,6 +30,8 @@ LOGGER =logging.getLogger("scheduled_monitoring")
 
 RAW_DIR = "data/raw"
 
+ERROR_FLAG_FILE = "data/locks/.lock-email-error-{{daily_job}}-{date}"
+
 def __setup_logger(daily_log_path):
     """
     
@@ -314,12 +316,58 @@ def notify_experiment_completion():
     return
 
 
+@with_appcontext
+def __send_error_email(error_message):
+    """
+
+    """
+
+    subject = 'BEATS Study - Error Running Daily Script '
+    title = "Immediate Attention Required"
+    greetings = f'Dear Experimenter,'
+    thank_you = 'An error has occurred while running daily periodic jobs. The app may not be functioning correctly.'
+    next_steps = f'Error Details: {error_message}'
+    button = ""
+    link = ""
+
+    with mail.connect() as conn:
+        subject = subject
+        msg = Message(subject=subject,
+                      recipients=[current_app.config["ERROR_EMAIL"]],
+                      html=render_template("email_template.html", 
+                      title=title,
+                      greetings=greetings,
+                      thank_you=thank_you,
+                      next_steps=next_steps,
+                      button=button,
+                      link=link))
+
+        try:
+            conn.send(msg)
+            LOGGER.exception("Error email sent to experimenter")
+        except Exception:
+            LOGGER.exception(f"Unable to send error email")
+
+
+def _handle_error_notification(error_message, error_file):
+    """
+    Sends an email notification only once per issue using a flag file.
+    """
+    if not os.path.exists(error_file):
+        __send_error_email(error_message)  # Replace with actual email function
+        with open(error_file, "w") as f:
+            f.write(f"Error reported: {error_message}")
+
 @click.command()
 @click.option("--all_daily_physio", is_flag=True, show_default=True, default=False, help="If a music episode occurred, download all daily data. Otherwise just during music session.")
 def run_daily_jobs(all_daily_physio):
     """
     Execute daily jobs
     """
+    global ERROR_FLAG_FILE
+
+    error_date = ERROR_FLAG_FILE.format(date=datetime.today().date())
+
     #
     daily_log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "logs", f"daily_jobs.log")
     __setup_logger(daily_log_path)
@@ -328,6 +376,8 @@ def run_daily_jobs(all_daily_physio):
     try:
         purge_cache_and_not_verified()
     except Exception as e:
+        error_date_job = error_date.format(daily_job="purge")
+        _handle_error_notification(e, error_date_job)
         LOGGER.error(
         "An error occurred while conducting daily cleaning:\n"
         f"Exception: {e}\n"
@@ -338,6 +388,8 @@ def run_daily_jobs(all_daily_physio):
     try:
         transfer_physio_data(all_daily_physio)
     except Exception as e:
+        error_date_job = error_date.format(daily_job="transfer")
+        _handle_error_notification(e, error_date_job)
         LOGGER.error(
         "An error occurred while transferring physiological data to the app.\n"
         f"Exception: {e}\n"
@@ -348,6 +400,8 @@ def run_daily_jobs(all_daily_physio):
     try:
         notify_experiment_completion()
     except Exception as e:
+        error_date_job = error_date.format(daily_job="notify")
+        _handle_error_notification(e, error_date_job)
         LOGGER.error(
         "An error occurred while notifying experiment completion data to app:\n"
         f"Exception: {e}\n"

@@ -31,6 +31,7 @@ STUDY_SURVEYS = {"Goal-Attainment":"https://uofg.qualtrics.com/jfe/form/SV_elX4T
                  "Eudaimonic":"https://uofg.qualtrics.com/jfe/form/SV_a4PrvrXb3arVwp0",
                  "Affective":"https://uofg.qualtrics.com/jfe/form/SV_0HQk0nbMczLUpGm",
                  "Other":"https://uofg.qualtrics.com/jfe/form/SV_cLLHmjnWd3G0wXI"}
+ERROR_FLAG_FILE = "data/locks/.lock-email-error-playback-{date}"
 
 def __setup_logger(email_log, dir_path):
     """
@@ -62,7 +63,7 @@ def __get_spotify_client(email):
     """
     """
     #
-    scope = "user-read-playback-state user-read-email playlist-read-private"
+    scope = "user-read-playback-state user-read-email"
 
     #
     try:
@@ -79,7 +80,7 @@ def __get_spotify_client(email):
         auth = spotipy.SpotifyOAuth(client_id=current_app.config["SPOTIPY_CLIENT_ID"], client_secret=current_app.config["SPOTIPY_CLIENT_SECRET"],
                                     scope=scope, redirect_uri=current_app.config["SPOTIPY_REDIRECT_URI"], open_browser=False,
                                     cache_handler=cache_handler)
-        spotify = spotipy.Spotify(auth_manager=auth)
+        spotify = spotipy.Spotify(auth_manager=auth, retries=0)
         # LOGGER.debug(f"Spotify Client Initialised with account {email}")
         
         return spotify
@@ -117,13 +118,32 @@ def __get_playback_state(sp):
     Output:
         current_state(dict/None): Response to current playback state of account
     """
+    global ERROR_FLAG_FILE
+
+    ERROR_FLAG_FILE = ERROR_FLAG_FILE.format(date=datetime.today().date())
 
     try:
         current_state = sp.current_playback()
         return current_state
-    except:
-        LOGGER.exception("Unable to get playback state")
-        sys.exit (-1)
+    except spotipy.exceptions.SpotifyBaseException as e:
+        LOGGER.error(f"Unable to get playback state: {e} - {e.headers}")
+
+        # Send email only if not sent before
+        if not os.path.exists(ERROR_FLAG_FILE):
+            __send_error_email(f"Spotify API Error: {e}")
+            with open(ERROR_FLAG_FILE, "w") as f:
+                f.write(f"Error reported: {e}")
+
+    except Exception as e:
+        LOGGER.error(f"Unable to get playback state: {e}")
+
+        # Send email only if not sent before
+        if not os.path.exists(ERROR_FLAG_FILE):
+            __send_error_email(f"Spotify API Error: {e}")
+            with open(ERROR_FLAG_FILE, "w") as f:
+                f.write(f"Error reported: {e}")
+    
+    sys.exit (-1)
 
 
 @with_appcontext
@@ -297,8 +317,6 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
                     break
                 n_offline = n_offline+1 if user_playback_state.get('progress_ms', None)/track_duration_ms == 1 else 0
 
-                
-
     #
     current_session = MusicListening.get_by_pid_session_id(participant_pid, session_id)
     session_total_ms = sum(record.elapsed_time_ms for record in current_session)
@@ -347,6 +365,39 @@ def __send_survey(participant_pid, session_id, account_email, dominant_context):
         except Exception:
             LOGGER.exception(f"Unable to send email to {participant_pid}")
             sys.exit (-1)
+
+
+@with_appcontext
+def __send_error_email(error_message):
+    """
+
+    """
+
+    subject = 'BEATS Study - Error Playback Monitoring Script '
+    title = "Immediate Attention Required"
+    greetings = f'Dear Experimenter,'
+    thank_you = 'An error has occurred while retrieving the playback state from Spotify. The app may not be functioning correctly.'
+    next_steps = f'Error Details: {error_message}'
+    button = ""
+    link = ""
+
+    with mail.connect() as conn:
+        subject = subject
+        msg = Message(subject=subject,
+                      recipients=[current_app.config["ERROR_EMAIL"]],
+                      html=render_template("email_template.html", 
+                      title=title,
+                      greetings=greetings,
+                      thank_you=thank_you,
+                      next_steps=next_steps,
+                      button=button,
+                      link=link))
+
+        try:
+            conn.send(msg)
+            LOGGER.exception("Error email sent to experimenter")
+        except Exception:
+            LOGGER.exception(f"Unable to send error email")
 
 
 @click.command()

@@ -41,8 +41,8 @@ class SpotifyLogin(Resource):
         if 'uuid' not in session:
             session['uuid'] = str(uuid.uuid4())
 
-        # scope = "user-read-playback-state user-read-email"
-        scope = "user-read-playback-state user-read-email playlist-read-private"
+        scope = "user-read-playback-state user-read-email"
+        # scope = "user-read-playback-state user-read-email playlist-read-private"
 
         cache_path = os.path.join(cache_dir, f".cache-{session['uuid']}")
         cache_handler = spotipy.cache_handler.CacheFileHandler(cache_path=cache_path)
@@ -54,7 +54,7 @@ class SpotifyLogin(Resource):
                                                    scope=scope,
                                                    cache_handler=cache_handler,
                                                    redirect_uri=url_for("api.spotifylogin", _external=True),
-                                                   show_dialog=True)
+                                                   show_dialog=True) 
 
         if request.args.get("code"):
             # Step 2. Being redirected from Spotify auth page
@@ -67,18 +67,24 @@ class SpotifyLogin(Resource):
             return redirect(auth_url)
 
         # Step 3. Signed in, display data
-        spotify = spotipy.Spotify(auth_manager=auth_manager)
+        try:
+            spotify = spotipy.Spotify(auth_manager=auth_manager, retries=0)
+            account_info = spotify.me()
+            account_email = account_info["email"]
+            account_uri = account_info["uri"]
+        except spotipy.exceptions.SpotifyBaseException as e:
+             self.logger.error(f"Spotify login request failed: {e} - {e.headers}")
+             flash(f"Unable to login to Spotify with provided account", "danger")
+             return redirect(url_for('portal.dashboard'))
 
-        # if SpotifyAccount.get_by_email(email=spotify.me()['email']):
-        #     return {'message': 'This account has already been connected'}, HTTPStatus.BAD_REQUEST
-
-        self.logger.debug(f"{spotify.me()['email']} has login successuly to Spotify")
-
-        data = {"account_email": spotify.me()["email"],
-                "uri": spotify.me()["uri"],
+        data = {"account_email": account_email,
+                "uri": account_uri,
                 "cache_path": cache_path}
+    
+        account_in_db = SpotifyAccount.get_by_email(email=account_email)
         
-        account_in_db = SpotifyAccount.get_by_email(email=spotify.me()['email'])
+        self.logger.debug(f"{account_email} has login successuly to Spotify")
+
 
         if account_in_db is None:
             spotify_account = SpotifyAccount(**data)
@@ -86,10 +92,10 @@ class SpotifyLogin(Resource):
         else:
             account_in_db.cache_path = cache_path
             account_in_db.save()
-            self.logger.warning(f"{spotify.me()['email']} already connected, updating cache path")
+            self.logger.warning(f"{account_email} already connected, updating cache path")
 
 
-        flash(f"Successfully connected spotify account: {spotify.me()['email']}", "success")
+        flash(f"Successfully connected spotify account: {account_email}", "success")
 
         session.pop('uuid', default=None)
 
