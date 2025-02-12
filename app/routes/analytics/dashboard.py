@@ -204,6 +204,15 @@ def create_dash_app(server, progress_tracking):
                 className="mb-4"
             ),
 
+            # Barcharts Subplots
+            dbc.Row(
+                dbc.Col(
+                    dcc.Graph(id="barcharts-subplot-demo", style={"height": "600px"}),
+                    width=12
+                ),
+                className="mb-4"
+            ),
+
             # Scores Table and Top Table with Titles
             dbc.Row(
                 [

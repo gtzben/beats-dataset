@@ -12,7 +12,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly_calplot import calplot
 
-
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
 def create_bar_chart(df):
@@ -134,6 +135,65 @@ def create_radial_barchart(df, account, context, avail_accounts, avail_contexts)
     )
 
     return radial_chart
+
+
+def create_barcharts_demo(df_responses):
+    """
+
+    """
+
+    # Dictionary of demographic variables
+    demo_vars = {
+        "Gender": 1,  
+        "Age Group": 3,  
+        "Ethnicity": 4,  
+        "Employment": 10,  
+        "Workplace": 13,  
+        "People Nearby": 15,  
+        "Tech Proficiency": 20,  
+        "Non-Dom Hand": 21,  
+        "Streaming Likely": 24,  
+        "Main Streaming": 25
+    }
+
+    # Define number of rows and columns for subplots
+    num_vars = len(demo_vars)
+    cols = 5  # Set number of columns
+    rows = (num_vars + cols - 1) // cols  # Calculate required rows
+
+    # Create subplots
+    bar_charts_demo = make_subplots(
+        rows=rows, cols=cols, 
+        subplot_titles=list(demo_vars.keys())
+    )
+
+    # Loop through demographic variables and add bar plots
+    for idx, (demo_name, demo_id) in enumerate(demo_vars.items()):
+        row = (idx // cols) + 1
+        col = (idx % cols) + 1
+
+        # Filter responses for the current demographic variable
+        data = df_responses[(df_responses["questionnaire"] == "demo") & 
+                            (df_responses["item"] == demo_id)]
+        
+        # Create bar plot
+        count_data = data["response"].value_counts()
+        bar_plot = go.Bar(x=count_data.index, y=count_data.values, text=count_data.values, textposition='auto')
+
+        # Add trace to subplot
+        bar_charts_demo.add_trace(bar_plot, row=row, col=col)
+        bar_charts_demo.update_traces(hoverinfo="none", hovertemplate=None)
+        
+
+    # Update layout
+    bar_charts_demo.update_layout(
+        height=600, width=1100, # Update size accordingly
+        title_text="Demographics Participants",
+        template="plotly_white",
+        showlegend=False, bargap=0.3
+    )
+
+    return bar_charts_demo
 
 
 def create_calendar_heatmap(df, account, context, avail_accounts, avail_contexts):

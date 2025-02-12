@@ -18,8 +18,10 @@ from app.routes.api.models.participant import Participant
 from app.routes.api.schemas.music import MusicListeningSchema
 from app.routes.api.schemas.participant import ParticipantFlatSchema
 
-from app.routes.analytics.visualizations.charts import create_bar_chart, create_radial_barchart, create_calendar_heatmap, create_hist
 from app.routes.analytics.visualizations.tables import create_table_progress, get_scores_psychometrics, top_tracks_listened
+from app.routes.analytics.visualizations.charts import (create_bar_chart, create_radial_barchart,
+                                                         create_calendar_heatmap, create_hist, create_barcharts_demo)
+
 
 
 
@@ -120,6 +122,21 @@ def register_callbacks(dash_app, server, avail_accounts, avail_contexts, progres
         df_music_history = pd.read_json(data["music_history"])
         return create_radial_barchart(df_music_history, account, context, avail_accounts, avail_contexts)
     
+
+    #
+    @dash_app.callback(
+        Output("barcharts-subplot-demo", "figure"),
+        [Input("data-store", "data")]
+    )
+    def update_demo_barcharts(stored_data):
+        """Update demographics subplots"""
+        #
+        data = json.loads(stored_data)
+        
+        #
+        df_responses = pd.read_json(data["survey_data"])
+        return create_barcharts_demo(df_responses)
+
     #
     @dash_app.callback(
         [
