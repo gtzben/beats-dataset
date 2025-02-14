@@ -26,10 +26,10 @@ class ParticipantSchema(Schema):
     id = fields.Int(dump_only=True)
     pid = fields.String(required=True)
     email = fields.Email(required=True)
-    ndh = fields.String(required=True)
     is_active = fields.Boolean(dump_only=True)
     is_verified = fields.Boolean(dump_only=True)
     is_withdrawn = fields.Boolean(dump_only=True)
+    follow_up = fields.Boolean(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     last_physio_ts = fields.Int(dump_only=True)
@@ -62,15 +62,6 @@ class ParticipantSchema(Schema):
         return grouped_responses
 
 
-    @validates('ndh')
-    def validate_ndh(self, value):
-        # Normalize value to lowercase for comparison
-        normalized_value = value.strip().lower()
-        
-        # Check if the input matches either "left" or "right"
-        if normalized_value not in ['left', 'right']:
-            raise ValidationError("Non-dominant hand must be 'left' or 'right'.")
-
 
 class ParticipantFlatSchema(Schema):
     """
@@ -81,13 +72,15 @@ class ParticipantFlatSchema(Schema):
 
     id = fields.Int(dump_only=True)
     pid = fields.String(dump_only=True)
+    device_id = fields.Int(dump_only=True)
+    spotify_id = fields.Int(dump_only=True)
     device_serial = fields.String(dump_only=True)
     spotify_account = fields.String(dump_only=True)
-    ndh = fields.String(dump_only=True)
     is_active = fields.Boolean(dump_only=True)
     is_verified = fields.Boolean(dump_only=True)
     is_withdrawn = fields.Boolean(dump_only=True)
     is_completed = fields.Boolean(dump_only=True)
+    follow_up = fields.Boolean(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     last_physio_ts = fields.Int(dump_only=True)

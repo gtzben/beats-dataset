@@ -57,7 +57,7 @@ def __setup_logger(daily_log_path):
 
 
 @with_appcontext
-def purge_cache_and_not_verified(max_days_users=1, max_days_participants = 21):
+def purge_cache_and_not_verified(max_days_users=1, max_days_participants=1):
     """
     Delete users and participants whose account was not verified, as well as cache files not
     associated to Spotify accounts in DB
@@ -149,7 +149,8 @@ def daily_physio_transfer(id_participant, spotify_account, pid, device_serial, p
 
             # Update last session downloaded
             participant_obj = Participant.get_by_pid(pid)
-            participant_obj.update({"last_physio_ts":timestamps[-1]})
+            participant_obj.last_physio_ts = timestamps[-1]
+            participant_obj.save()
 
         elif already_transferred:
             LOGGER.info("Physiology and music session already transferred.")
@@ -225,7 +226,6 @@ def transfer_physio_data(all_daily_physio):
     # today = datetime.today().strftime('%Y-%m-%d')
     # Running at 00:33, consider until yesterday
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
-    yesterday = "2025-02-13"
 
     participant_obj = Participant.get_all_participants(is_active=True, is_withdrawn=False)
     active_participants = ((ParticipantFlatSchema(many=True, only=["id", "pid", "spotify_account", "device_serial", "created_at", "last_physio_ts"])

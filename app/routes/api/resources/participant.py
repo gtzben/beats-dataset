@@ -185,7 +185,8 @@ class ParticipantPortal(Resource):
                 is_completed = parse_boolean(request.args.get("is-completed"))
                 all_participants = Participant.get_all_participants(is_active=is_active, is_verified=is_verified,
                                                                      is_withdrawn=is_withdrawn, is_completed=is_completed)
-                data = ParticipantFlatSchema(many=True).dump(all_participants)
+                data = (ParticipantFlatSchema(many=True, exclude=("device_serial", "spotify_account", "is_verified", "updated_at"))
+                        .dump(all_participants))
 
             return data, HTTPStatus.OK
         else:
@@ -281,6 +282,7 @@ class ParticipantLinkResources(Resource):
                     already_assigned_device.save()
                 
                 participant.device_serial = data.get('serial_number')
+                participant.device_id= device.id
                 participant.save()
                 device.is_assigned = True
                 device.save()
@@ -300,6 +302,7 @@ class ParticipantLinkResources(Resource):
                     already_assigned_spotify.save()
                 
                 participant.spotify_account = data.get('account_email')
+                participant.spotify_id = spotify_account.id
                 participant.save()
                 spotify_account.is_assigned = True
                 spotify_account.save()
@@ -307,7 +310,7 @@ class ParticipantLinkResources(Resource):
 
             self.logger.info(f"Device {participant.device_serial} and account {participant.spotify_account} are linked to participant {participant_pid}.")
 
-            return {"message": f"Device association to participant {participant_pid} was successful"}, HTTPStatus.OK    
+            return {"message": f"Resource association to participant {participant_pid} was successful"}, HTTPStatus.OK    
 
         else:
             return {"message":"You are not allowed to associate resources to participants"}, HTTPStatus.FORBIDDEN
@@ -437,11 +440,11 @@ class ParticipantLogin(Resource):
         
         if not participant.is_active and not (participant.is_withdrawn or participant.is_completed):
             self.logger.info(f"Participant {pid} has sign in for the pre-study flow!")
-        elif participant.is_active and (participant.is_withdrawn or participant.is_completed): # Conclude experiment if withdrawn or completed
-            self.logger.info(f"Participant {pid} has sign in for the post-study flow!")
         elif (not participant.is_active) and (participant.is_withdrawn):
             self.logger.info(f"Participant {pid} has opted out and has returned device already")
-            return {"message": "Participant opted out and device returned already."}, HTTPStatus.CONFLICT
+            return {"message": "Participant opted out and device returned already."}, HTTPStatus.CONFLICT      
+        elif participant.is_withdrawn or participant.is_completed: # Conclude experiment if withdrawn or completed
+            self.logger.info(f"Participant {pid} has sign in for the post-study flow!")
         else:
             self.logger.warning(f"Participant {pid} has not completed the experiment. If he/she no longer wishes to continue, he/she must withdraw.")
             return {"message": "Participant has not completed the experiment. Wait or opt out the experiment"}, HTTPStatus.CONFLICT
@@ -635,6 +638,7 @@ class ParticipantConcludeResource(Resource):
             
             # Update followup response to participant table 
             followup = survey_data.pop("survey_followup_data", False)
+            participant.follow_up=followup
             self.logger.debug(f"Participant {participant_pid} interested in followup study? {followup}")
 
             #

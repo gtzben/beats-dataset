@@ -184,8 +184,7 @@ def register_resources():
     if participant_form.validate_on_submit() and participant_form.submit.data:
         # Handle participant registration
         participant_data = {"pid":participant_form.pid.data,
-                            "email": participant_form.email.data,
-                            "ndh": participant_form.ndh.data}
+                            "email": participant_form.email.data}
 
         # sending post request and saving response as response object
         response = requests.post(url=url_for("api.participantresource", _external=True),
@@ -326,8 +325,8 @@ def associate_resources():
 
     association_form = AssociationForm()
     association_form.participants.choices = [(p.get("pid"),p.get("pid")) for p in participants_data['data']]
-    association_form.devices.choices = [(d.get("serial_number"),d.get("serial_number")) for d in devices_data['data']]
-    association_form.spotify_accounts.choices = [(s.get("account_email"),s.get("account_email")) for s in spotify_data['data']]
+    association_form.devices.choices += [(d.get("serial_number"),d.get("serial_number")) for d in devices_data['data']]
+    association_form.spotify_accounts.choices += [(s.get("account_email"),s.get("account_email")) for s in spotify_data['data']]
 
     if association_form.validate_on_submit():
 
@@ -335,6 +334,9 @@ def associate_resources():
         "serial_number": association_form.devices.data,
         "account_email": association_form.spotify_accounts.data
         }
+
+        data = {key: value for key, value in data.items() if value !="None"}
+
         associate_url = url_for("api.participantlinkresources", _external=True,
                                 participant_pid=association_form.participants.data)
 

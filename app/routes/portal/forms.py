@@ -28,7 +28,6 @@ class ResetPasswordForm(FlaskForm):
 class ParticipantForm(FlaskForm):
     pid = StringField('Participant ID', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired()])
-    ndh = StringField('Non-dominant Hand', validators=[DataRequired()])
     submit = SubmitField('Register Participant')
 
 class DeviceForm(FlaskForm):
@@ -40,8 +39,8 @@ class DeviceForm(FlaskForm):
 
 class AssociationForm(FlaskForm):
     participants = SelectField("Active Participants", choices=[])
-    devices = SelectField("Available Devices", choices=[])
-    spotify_accounts = SelectField("Available Spotify Acounts", choices=[])
+    devices = SelectField("Available Devices", choices=[(None, "--")], default=None)
+    spotify_accounts = SelectField("Available Spotify Acounts", choices=[(None, "--")], default=None)
     submit = SubmitField('Associate')
 
 class WithdrawalForm(FlaskForm):

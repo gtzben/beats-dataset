@@ -20,13 +20,6 @@
                 <span style="color: red;">[{{ error }}]</span>
                 {% endfor %}
             </p>
-            <p>
-                {{ participant_form.ndh.label }}<br>
-                {{ participant_form.ndh(size=32) }}<br>
-                {% for error in participant_form.ndh.errors %}
-                <span style="color: red;">[{{ error }}]</span>
-                {% endfor %}
-            </p>
             <p>{{ participant_form.submit() }}</p>
         </form>
     </div>

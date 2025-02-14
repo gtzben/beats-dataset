@@ -18,16 +18,18 @@ class Participant(db.Model):
     pid = db.Column(db.String(50), nullable=False, unique=True) # Pseudonym id
     email_hash = db.Column(db.String(200), nullable=False, unique=True) # Validate email since is deterministic but secure with key, cannot recover the original
     email_encrypted = db.Column(db.String(200), nullable=False, unique=True) # Can be decoded to send periodic emails
-    ndh = db.Column(db.String(10), nullable=False)
     is_active = db.Column(db.Boolean(), default=False)
     is_verified = db.Column(db.Boolean(), default=False)
     is_withdrawn = db.Column(db.Boolean(), default=False)
     is_completed= db.Column(db.Boolean(), default=False)
+    follow_up= db.Column(db.Boolean(), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
     last_physio_ts = db.Column(db.Integer, nullable=True)
     user_id = db.Column(db.Integer,db.ForeignKey('user.id'), nullable=False)
+    spotify_id = db.Column(db.Integer, nullable=True)
     spotify_account = db.Column(db.String(200),db.ForeignKey('spotifyaccount.account_email'), nullable=True)
+    device_id = db.Column(db.Integer, nullable=True)
     device_serial = db.Column(db.String(200),db.ForeignKey('device.serial_number'), nullable=True, unique=False)
 
     musiclistening = db.relationship('MusicListening', backref='participant')
