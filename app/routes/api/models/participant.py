@@ -25,6 +25,7 @@ class Participant(db.Model):
     is_completed= db.Column(db.Boolean(), default=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now())
+    last_physio_ts = db.Column(db.Integer, nullable=True)
     user_id = db.Column(db.Integer,db.ForeignKey('user.id'), nullable=False)
     spotify_account = db.Column(db.String(200),db.ForeignKey('spotifyaccount.account_email'), nullable=True)
     device_serial = db.Column(db.String(200),db.ForeignKey('device.serial_number'), nullable=True, unique=False)
@@ -81,6 +82,14 @@ class Participant(db.Model):
     def save(self):
         db.session.add(self)
         db.session.commit()
+
+    def update(self, updates):
+        for key, value in updates.items():
+            if hasattr(self, key):  # Ensure the attribute exists on the model
+                setattr(self, key, value)
+            else:
+                raise AttributeError(f"{key} is not a valid attribute of {self.__class__.__name__}")
+        self.save()
 
     def delete(self):
         db.session.delete(self)

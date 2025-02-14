@@ -32,6 +32,7 @@ class ParticipantSchema(Schema):
     is_withdrawn = fields.Boolean(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
+    last_physio_ts = fields.Int(dump_only=True)
 
     user = fields.Nested(UserSchema, attribute='user', dump_only=True, only=['email','institution'])
     device = fields.Nested(DeviceSchema, attribute='device', dump_only=True, only=['device_name','serial_number', "measurement_location"])
@@ -89,6 +90,7 @@ class ParticipantFlatSchema(Schema):
     is_completed = fields.Boolean(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
+    last_physio_ts = fields.Int(dump_only=True)
 
     @post_dump(pass_many=True)
     def wrap(self, data, many, **karwgs):

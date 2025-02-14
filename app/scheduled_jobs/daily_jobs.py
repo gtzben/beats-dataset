@@ -147,6 +147,10 @@ def daily_physio_transfer(id_participant, spotify_account, pid, device_serial, p
 
             files_transfered = True
 
+            # Update last session downloaded
+            participant_obj = Participant.get_by_pid(pid)
+            participant_obj.update({"last_physio_ts":timestamps[-1]})
+
         elif already_transferred:
             LOGGER.info("Physiology and music session already transferred.")
 
@@ -156,6 +160,7 @@ def daily_physio_transfer(id_participant, spotify_account, pid, device_serial, p
 
     return files_transfered
 
+@with_appcontext
 def session_physio_transfer(id_participant, spotify_account, pid, device_serial, participant_dir,
                              start_end_sessions, date, last_session_ts):
     """
@@ -199,6 +204,11 @@ def session_physio_transfer(id_participant, spotify_account, pid, device_serial,
             LOGGER.info(f"Succesfully preprocessed {len(timestamps)} avro files and saved raw data in `{save_dir}` "+
                 f"directory from session started at {started_at} and ended at {ended_at}")
             n_transfered+=1
+
+            # Update last session downloaded
+            participant_obj = Participant.get_by_pid(pid)
+            participant_obj.update({"last_physio_ts":timestamps[-1]})
+
         elif skipped: # ignore already downloaded data from previous sessions.
             continue
         else:
@@ -215,15 +225,18 @@ def transfer_physio_data(all_daily_physio):
     # today = datetime.today().strftime('%Y-%m-%d')
     # Running at 00:33, consider until yesterday
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
+    yesterday = "2025-02-13"
 
     participant_obj = Participant.get_all_participants(is_active=True, is_withdrawn=False)
-    active_participants = (ParticipantFlatSchema(many=True, only=["id", "pid", "spotify_account", "device_serial", "created_at"]).dump(participant_obj)).get("data")
+    active_participants = ((ParticipantFlatSchema(many=True, only=["id", "pid", "spotify_account", "device_serial", "created_at", "last_physio_ts"])
+                           .dump(participant_obj))
+                           .get("data"))
 
     total_sessions_transfered = 0
     for participant in active_participants:
     
         # Check by active participants
-        id_participant, pid, spotify_account, device_serial, created_at = participant.values()
+        id_participant, pid, spotify_account, device_serial, created_at, last_physio_ts = participant.values()
 
         # Uniform naming convention to store participants data in independent directories 
         id_participant = f"P{str(id_participant).zfill(2)}"
@@ -232,17 +245,16 @@ def transfer_physio_data(all_daily_physio):
 
         if (device_serial is None ) or (spotify_account is None):
             continue
-        
-        # Get date of last session
-        try:
-            last_session_ts = int(sorted(os.listdir(participant_dir))[-1].split("_")[1])
-            last_session_date = str(datetime.fromtimestamp(last_session_ts).date())
-        except: # if no session exist, start from last modification date of participant resource
-            last_session_date = str(datetime.fromisoformat(created_at).date())
-            last_session_ts = int(datetime.fromisoformat(last_session_date).timestamp())
+
+        # Get date of last physio session downloaded
+        if last_physio_ts is None:
+            last_physio_date = str(datetime.fromisoformat(created_at).date())
+            last_physio_ts = int(datetime.fromisoformat(last_physio_date).timestamp())
+        else:
+            last_physio_date = str(datetime.fromtimestamp(last_physio_ts).date())
 
         # Check daily since last data transfer in case wristband did not syncrhonised data with the app
-        date_range = list(pd.date_range(last_session_date, yesterday).strftime(date_format="%Y-%m-%d"))
+        date_range = list(pd.date_range(last_physio_date, yesterday).strftime(date_format="%Y-%m-%d"))
 
         # Check daily activity
         LOGGER.info(f"Search and transfer physiological data from S3 to app for participant {pid} from {date_range[0]} to {date_range[-1]}")
@@ -258,12 +270,12 @@ def transfer_physio_data(all_daily_physio):
             start_end_sessions = [{**start, **end} for start, end in zip(start_sessions, end_sessions)]
             if all_daily_physio:
                 daily_transfered = daily_physio_transfer(id_participant, spotify_account, pid, device_serial, participant_dir, created_at,
-                          start_end_sessions, date, last_session_ts)
+                          start_end_sessions, date, last_physio_ts)
                 total_sessions_transfered+=daily_transfered
             else:
                 LOGGER.debug("Downloading physiology aligned to music sessions")
                 n_sessions_transfered = session_physio_transfer(id_participant, spotify_account, pid, device_serial, participant_dir,
-                                                                start_end_sessions, date, last_session_ts)
+                                                                start_end_sessions, date, last_physio_ts)
                 total_sessions_transfered+=n_sessions_transfered
 
     LOGGER.info(f"Number of sessions transfered: {total_sessions_transfered}")
