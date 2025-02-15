@@ -61,7 +61,7 @@ class Demographics(FlaskForm):
                         default=None,
                         validators=[DataRequired()])
     demo_7 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
-    demo_8 = SelectField("What is your mother language?",
+    demo_8 = SelectField("What is your native language?",
                     choices=[
                             (None, '--'),
                             ('english', 'English'),
@@ -94,9 +94,7 @@ class Demographics(FlaskForm):
                         validators=[DataRequired()])
     demo_11 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
 
-    demo_12 = StringField("What is your current job title?", validators=[DataRequired()])
-
-    demo_13 = SelectField("In your main job, what is the address of your workplace?",
+    demo_12 = SelectField("Where do you primarily carry out your main activities?",
                     choices=[
                             (None, '--'),
                             ('home', 'Mainly work at or from home'),
@@ -106,7 +104,7 @@ class Demographics(FlaskForm):
                         default=None,
                         validators=[DataRequired()])
 
-    demo_14 = SelectField("How satisfied are you with your work environment?",
+    demo_13 = SelectField("How satisfied are you with your work environment?",
                     choices=[
                             (None, '--'),
                             ('very-satisfied', 'Very satisfied'),
@@ -118,7 +116,7 @@ class Demographics(FlaskForm):
                         default=None,
                         validators=[DataRequired()])
 
-    demo_15 = SelectField("When working is there people around you?",
+    demo_14 = SelectField("When working is there people around you?",
                     choices=[
                             (None, '--'),
                             ('yes', 'Yes'),
@@ -126,7 +124,7 @@ class Demographics(FlaskForm):
                         ],
                         default=None,
                         validators=[DataRequired()])
-    demo_16 = SelectMultipleField(
+    demo_15 = SelectMultipleField(
         'Which of the following aptitudes are essential for your job? (Select all that apply):',
         choices=[
             ('verbal-ability', 'Verbal ability'),
@@ -140,7 +138,7 @@ class Demographics(FlaskForm):
         validators=[Optional()]
     )
 
-    demo_17 = SelectMultipleField(
+    demo_16 = SelectMultipleField(
         'Does your job involve any of the following? (Select all that apply):',
         choices=[
             ('frequent-changes', 'Frequent changes and variety in duties'),
@@ -154,11 +152,11 @@ class Demographics(FlaskForm):
         validators=[Optional()]
     )
 
-    demo_18 = SelectField("How physically demanding is your job?",
+    demo_17 = SelectField("How physically demanding is your job?",
                     choices=[
                             (None, '--'),
                             ('sedentary', 'Sedentary: Little to no physical effort required.'),
-                            ('light', "Light: Requires light physical effort, such as standing or walking."),
+                            ('light', "Light: Requires light physical effort, such as standing or walking regularly."),
                             ('medium', "Medium: Involves moderate physical effort, such as regular lifting or movement."),
                             ('heavy', "Heavy: Demands significant physical effort, such as frequent lifting or strenuous activity."),
                             ('very-heavy', "Very Heavy: Requires continuous and intense physical effort.")
@@ -166,18 +164,19 @@ class Demographics(FlaskForm):
                         default=None,
                         validators=[DataRequired()])
 
-    demo_19 = SelectField("Which of the following best describes your primary interactions at work?",
+    demo_18 = SelectField("Which of the following best describes your primary interactions at work?",
                     choices=[
                             (None, '--'),
                             ('take-instructions', 'Taking instructions from supervisors'),
                             ('serving-others', "Serving or attending to others' needs"),
                             ('supervising-others', "Supervising or directing others’ work"),
-                            ('instructing-others', "Instructing or training others")
+                            ('instructing-others', "Instructing or training others"),
+                            ('self-directed-work', "Planning and carrying out your own activities")
                         ],
                         default=None,
                         validators=[DataRequired()])
 
-    demo_20 = SelectField("How would you describe your proficiency with technology?",
+    demo_19 = SelectField("How would you describe your proficiency with technology?",
                     choices=[
                             (None, '--'),
                             ('minimal', 'Minimal (basic use of smartphones or computers)'),
@@ -189,7 +188,7 @@ class Demographics(FlaskForm):
                         default=None,
                         validators=[DataRequired()])
 
-    demo_21 = SelectField("Which hand do you use less often or is considered your non-dominant hand?",
+    demo_20 = SelectField("Which hand do you use less often or is considered your non-dominant hand?",
                     choices=[
                             (None, '--'),
                             ('left', 'Left'),
@@ -197,26 +196,26 @@ class Demographics(FlaskForm):
                         ],
                         default=None,
                         validators=[DataRequired()])
+    
+    demo_21 = SelectField("Are lyrics essential for you to listen to and enjoy music?",
+                    choices=[
+                            (None, '--'),
+                            ('yes', 'Yes'),
+                            ('no', "No"),
+                        ],
+                        default=None,
+                        validators=[DataRequired()])
+    
+    demo_22 = SelectField("Do you intentionally listen to music to support your health and wellbeing?",
+                    choices=[
+                            (None, '--'),
+                            ('yes', 'Yes'),
+                            ('no', "No"),
+                        ],
+                        default=None,
+                        validators=[DataRequired()])
+    demo_23 = StringField("If yes, please specify:", validators=[Optional()])
 
-    demo_22 = SelectMultipleField(
-        'What are the primary purposes for which you listen to music to support your health and well-being? (Select all that apply)',
-        choices=[
-            ('goal-attainment', 'Goal Attainment'),
-            ('eudaimonic', 'Eudaimonic'),
-            ('cognitive', 'Cognitive'),
-            ('affect-regulation', 'Affect Regulation'),
-            ('social', 'Social'),
-            ('everyday-listening', 'Everyday Listening'),
-            ('active-listening', 'Active Listening'),
-            ('personal-space', 'Personal Space'),
-            ('sleep-aid', 'Sleep Aid'),
-            ('other', 'Other')
-        ],
-        option_widget=CheckboxInput(),
-        widget=ListWidget(prefix_label=False),  # Renders a list of checkboxes
-        validators=[Optional()]
-    )
-    demo_23 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
 
     demo_24 = SelectField("How likely are you to use a music streaming service on a typical day?",
                     choices=[
@@ -244,6 +243,16 @@ class Demographics(FlaskForm):
                         default=None,
                         validators=[DataRequired()])
     demo_26 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
+
+    demo_27 = SelectField("Which option best describes your behaviour when listening to music on streaming services?",
+                    choices=[
+                            (None, '--'),
+                            ('own', 'Create and listen to my own playlists '),
+                            ('others', "Listen to playlists created by other users"),
+                            ('both', " Both Equally"),
+                        ],
+                        default=None,
+                        validators=[DataRequired()])
     
     
 

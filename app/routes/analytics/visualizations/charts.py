@@ -148,17 +148,19 @@ def create_barcharts_demo(df_responses):
         "Age Group": 3,  
         "Ethnicity": 4,  
         "Employment": 10,  
-        "Workplace": 13,  
-        "People Nearby": 15,  
-        "Tech Proficiency": 20,  
-        "Non-Dom Hand": 21,  
+        "Workplace": 12,  
+        "People Nearby": 14,  
+        "Tech Proficiency": 19,  
+        "Non-Dom Hand": 20,
+        "Music Well-being": 22,  
         "Streaming Likely": 24,  
-        "Main Streaming": 25
+        "Main Streaming": 25,
+        "Playlists Listening": 27  
     }
 
     # Define number of rows and columns for subplots
     num_vars = len(demo_vars)
-    cols = 5  # Set number of columns
+    cols = 4  # Set number of columns
     rows = (num_vars + cols - 1) // cols  # Calculate required rows
 
     # Create subplots

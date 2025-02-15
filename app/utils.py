@@ -135,7 +135,7 @@ def seed_data():
     """Insert seed data into the database"""
 
     surveys = [
-        {'name': 'demo', 'description':'Demographics', 'n_items':26},
+        {'name': 'demo', 'description':'Demographics', 'n_items':27},
         {'name': 'tipi', 'description':'Ten-Item Personality Inventory', 'n_items':10},
         {'name': 'panas', 'description':'Positive and Negative Affect Schedule', 'n_items':20},
         {'name': 'pss', 'description':'Perceived Stress Scale', 'n_items':14},

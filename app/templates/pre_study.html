@@ -115,12 +115,22 @@
             </span>
         </p>
 
-        <p>7.- {{form.demo.demo_12.label}}: {{ form.demo.demo_12() }}</p>
-        <p>8.- {{form.demo.demo_13.label}}: {{ form.demo.demo_13() }}</p>
-        <p>9.- {{form.demo.demo_14.label}}: {{ form.demo.demo_14() }}</p>
-        <p>10.- {{form.demo.demo_15.label}}: {{ form.demo.demo_15() }}</p>
+        <p>8.- {{form.demo.demo_12.label}}: {{ form.demo.demo_12() }}</p>
+        <p>9.- {{form.demo.demo_13.label}}: {{ form.demo.demo_13() }}</p>
+        <p>10.- {{form.demo.demo_14.label}}: {{ form.demo.demo_14() }}</p>
 
-        <p>11. {{ form.demo.demo_16.label }}</p>
+        <p>11. {{ form.demo.demo_15.label }}</p>
+        <div>
+            <ul style="list-style: none; padding: 0;">
+                {% for choice in form.demo.demo_15 %}
+                <li style="display: inline-block; margin-right: 10px;">
+                    <label>{{ choice() }} {{ choice.label }}</label>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <p>12. {{ form.demo.demo_16.label }}</p>
         <div>
             <ul style="list-style: none; padding: 0;">
                 {% for choice in form.demo.demo_16 %}
@@ -131,42 +141,22 @@
             </ul>
         </div>
 
-        <p>12. {{ form.demo.demo_17.label }}</p>
-        <div>
-            <ul style="list-style: none; padding: 0;">
-                {% for choice in form.demo.demo_17 %}
-                <li style="display: inline-block; margin-right: 10px;">
-                    <label>{{ choice() }} {{ choice.label }}</label>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <p>13.- {{form.demo.demo_18.label}}: {{ form.demo.demo_18() }}</p>
-        <p>14.- {{form.demo.demo_19.label}}: {{ form.demo.demo_19() }}</p>
-        <p>15.- {{form.demo.demo_20.label}}: {{ form.demo.demo_20() }}</p>
-        <p>16.- {{form.demo.demo_21.label}}: {{ form.demo.demo_21() }}</p>
+        <p>13.- {{form.demo.demo_17.label}}: {{ form.demo.demo_17() }}</p>
+        <p>14.- {{form.demo.demo_18.label}}: {{ form.demo.demo_18() }}</p>
+        <p>15.- {{form.demo.demo_19.label}}: {{ form.demo.demo_19() }}</p>
+        <p>16.- {{form.demo.demo_20.label}}: {{ form.demo.demo_20() }}</p>
 
         <hr>
         <h2>Music Streaming</h2>
 
-        <p>17. {{ form.demo.demo_22.label }}</p>
-        <div>
-            <ul style="list-style: none; padding: 0;">
-                {% for choice in form.demo.demo_22 %}
-                <li style="display: inline-block; margin-right: 10px;">
-                    <label>
-                        {{ choice(onchange="toggleOtherCheckboxField(this)", **{'data-other-field': 'other-17'}) }}
-                        {{ choice.label }}
-                    </label>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        <!-- Text input for 'Other' -->
-        <div id="other-17" style="display: none; margin-top: 10px;">
-            {{ form.demo.demo_23(class="form-control") }}
-        </div>
+        <p>17.- {{form.demo.demo_21.label}}: {{ form.demo.demo_21() }}</p>
+
+        <p>18. {{ form.demo.demo_22.label }}:
+            {{ form.demo.demo_22(onchange="toggleSelfDescribeField(this)", **{'data-other-field': 'other-18'}) }}
+            <span id="other-18" style="display: none;">
+                {{ form.demo.demo_23(class="form-control") }}
+            </span>
+        </p>
 
         <p>18.- {{form.demo.demo_24.label}}: {{ form.demo.demo_24() }}</p>
 
@@ -177,29 +167,31 @@
             </span>
         </p>
 
+        <p>20.- {{form.demo.demo_27.label}}: {{ form.demo.demo_27() }}</p>
+
 
         {% elif current_page == 3 %}
-        <h2>Ten-Item Personality Inventory-(TIPI)</h2>
+        <h2>Questionnaire 1/6</h2>
         {{ data_table(subform_headers, subform_values) }}
 
         {% elif current_page == 4 %}
-        <h2>Positive and Negative Affect Schedule (PANAS-SF)</h2>
+        <h2>Questionnaire 2/6</h2>
         {{ data_table(subform_headers, subform_values) }}
 
         {% elif current_page == 5 %}
-        <h2>Perceived Stress Scale - (PSS)</h2>
+        <h2>Questionnaire 3/6</h2>
         {{ data_table(subform_headers, subform_values) }}
 
         {% elif current_page == 6 %}
-        <h2>Patient Health Questionnaire - (PHQ-9)</h2>
+        <h2>Questionnaire 4/6</h2>
         {{ data_table(subform_headers, subform_values) }}
 
         {% elif current_page == 7 %}
-        <h2>Short Test Of Music Preferences - Revised (STOMP-R)</h2>
+        <h2>Questionnaire 5/6</h2>
         {{ data_table(subform_headers, subform_values) }}
 
         {% elif current_page == 8 %}
-        <h2>The Goldsmiths Musical Sophistication Index</h2>
+        <h2>Questionnaire 6/6</h2>
         {{ data_table(subform_headers, subform_values) }}
         <p>32.- I engaged in regular, daily practice of a musical instrument (including voice) {{ form.gms.gms_32() }}
             for years.</p>
@@ -242,12 +234,12 @@
 
 <script>
 
-    function toggleSelfDescribeField(selectElement) {
+    function toggleSelector(selectElement) {
         // Get the ID of the corresponding text input field from the data-other-field attribute
         const otherFieldId = selectElement.getAttribute('data-other-field');
         const otherField = document.getElementById(otherFieldId);
 
-        if (selectElement.value === 'other') {
+        if (selectElement.value === 'other' || selectElement.value === 'yes') {
             otherField.style.display = 'inline-block';
         } else {
             otherField.style.display = 'none';
@@ -269,7 +261,7 @@
     // Automatically apply this logic to all select fields with "data-other-field"
     document.querySelectorAll('select[data-other-field]').forEach(select => {
         select.addEventListener('change', function () {
-            toggleSelfDescribeField(this);
+            toggleSelector(this);
         });
     });
 

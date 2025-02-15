@@ -68,9 +68,9 @@ def get_update_data_from_db(server, full_track_only=True):
                             on="participant_id", how="inner"))
     
     # Save raw data for notebooks 
-    # df_music_history.to_csv("music_sample_feb2.csv", index=False)
-    # df_participants.to_csv("participant_sample_feb2.csv", index=False)
-    # df_responses.to_csv("survey_sample_feb2.csv", index=False)
+    # df_music_history.to_csv("music_sample.csv", index=False)
+    # df_participants.to_csv("participant_sample.csv", index=False)
+    # df_responses.to_csv("survey_sample.csv", index=False)
 
     if full_track_only:
         df_music_history = df_music_history[df_music_history["playback_inconsistency"]==0] 

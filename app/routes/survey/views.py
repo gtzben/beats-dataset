@@ -213,6 +213,8 @@ def pre_study():
             for q_item, q_resp in collected_data[f'{request.blueprint}_demo_data'].items():
                 if isinstance(q_resp, list):
                     collected_data[f'{request.blueprint}_demo_data'][q_item] = "&".join(q_resp)
+                else: # Remove commas from text inputs
+                    collected_data[f'{request.blueprint}_demo_data'][q_item] = q_resp.replace(',', '')
 
              # sending post request and saving response as response object
             response = requests.post(url=url_for("api.surveyresponsesresource", _external=True,
