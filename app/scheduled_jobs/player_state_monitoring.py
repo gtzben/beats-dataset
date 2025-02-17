@@ -27,10 +27,6 @@ from app.extensions import db
 
 #
 LOGGER =logging.getLogger("scheduled_monitoring")
-STUDY_SURVEYS = {"Goal-Attainment":"https://uofg.qualtrics.com/jfe/form/SV_elX4ThXOhQqTxpY",
-                 "Eudaimonic":"https://uofg.qualtrics.com/jfe/form/SV_a4PrvrXb3arVwp0",
-                 "Affective":"https://uofg.qualtrics.com/jfe/form/SV_0HQk0nbMczLUpGm",
-                 "Other":"https://uofg.qualtrics.com/jfe/form/SV_cLLHmjnWd3G0wXI"}
 ERROR_FLAG_FILE = "data/locks/.lock-email-error-playback-{date}"
 
 def __setup_logger(email_log, dir_path):
@@ -80,7 +76,7 @@ def __get_spotify_client(email):
         auth = spotipy.SpotifyOAuth(client_id=current_app.config["SPOTIPY_CLIENT_ID"], client_secret=current_app.config["SPOTIPY_CLIENT_SECRET"],
                                     scope=scope, redirect_uri=current_app.config["SPOTIPY_REDIRECT_URI"], open_browser=False,
                                     cache_handler=cache_handler)
-        spotify = spotipy.Spotify(auth_manager=auth, retries=0)
+        spotify = spotipy.Spotify(auth_manager=auth, retries=0, requests_timeout=10)
         # LOGGER.debug(f"Spotify Client Initialised with account {email}")
         
         return spotify
@@ -100,10 +96,11 @@ def __validate_account_assignment(email):
         LOGGER.debug("No participant assigned to this account yet. Terminating programme.")
         sys.exit (-1)
 
+    participant_id = f"P{str(participant.id).zfill(2)}"
     participant_pid = participant.pid
     participant_email = decrypt_email(participant.email_encrypted)
     
-    return participant_pid, participant_email
+    return participant_id, participant_pid, participant_email
 
 
 
@@ -332,7 +329,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
 
 
 @with_appcontext
-def __send_survey(participant_pid, session_id, account_email, dominant_context):
+def __send_survey(participant_id, participant_pid, session_id, account_email, dominant_context):
     """
     TODO replace account email with participant's email
       to which the Spotify account was assigned.
@@ -345,7 +342,7 @@ def __send_survey(participant_pid, session_id, account_email, dominant_context):
     thank_you = ''
     next_steps = 'We noticed you recently listened to some music. Please take a moment to answer a few questions about your experience by clicking the button below:'
     button = "Take the Survey"
-    link = STUDY_SURVEYS[dominant_context] + f"?PID={participant_pid}&Session={session_id}"
+    link = current_app.config["SURVEY_LINK"] + f"?ID={participant_id}&PID={participant_pid}&Session={session_id}&Function={dominant_context}"
 
     with mail.connect() as conn:
         subject = subject
@@ -395,7 +392,7 @@ def __send_error_email(error_message):
 
         try:
             conn.send(msg)
-            LOGGER.exception("Error email sent to experimenter")
+            LOGGER.info("Error email sent to experimenter")
         except Exception:
             LOGGER.exception(f"Unable to send error email")
 
@@ -432,14 +429,14 @@ def monitor_playback_state(spotify_email,sleep_time,send_email, th_songs, th_min
     spotify_client = __get_spotify_client(spotify_email)
 
 
-    participant_pid, participant_email = __validate_account_assignment(spotify_email)
+    participant_id, participant_pid, participant_email = __validate_account_assignment(spotify_email)
 
     #
     session_id, n_session_tracks, session_time_ms, dominant_context = __check_activity(spotify_client, sleep_time, spotify_email, participant_pid)
 
     #
     if send_email and ((n_session_tracks>=th_songs) or (session_time_ms>= th_minutes * 6e4)):
-        __send_survey(participant_pid, session_id, participant_email, dominant_context)
+        __send_survey(participant_id, participant_pid, session_id, participant_email, dominant_context)
     else:
         LOGGER.info("Activity detected but survey not sent.")
 
