@@ -171,6 +171,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
     started_at =  datetime.fromtimestamp(user_playback_state["timestamp"]/1000.0)
     ended_at = datetime.fromtimestamp(time.time()) 
     context_counter = {}
+    playlists_in_context = {}
     n_session_tracks = 0
     track_ongoing = False
     record_id = None
@@ -225,16 +226,28 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
 
         else:
             
-            #
+            # Get basic information of song played
             track_name = user_playback_state.get("item", dict()).get("name", None)
             track_duration_ms = user_playback_state.get('item', dict()).get('duration_ms', None)
             device_type = user_playback_state["device"]["type"]
             
-            #
+            # Get context's uri if context exists, otherwise None
             current_context = user_playback_state.get("context", dict())
             context_uri = None if current_context is None else current_context.get("uri", None)
+            
+            # Check if context's uri is within the study contexts and count songs listened for each context
             context_cat = get_function_context(current_app.config['STUDY_PLAYLISTS'], context_uri)
             context_counter[context_cat]= context_counter.get(context_cat,0)+1
+
+            # Keep track of playlists names within the context
+            playlist_name = current_app.config['PLAYLISTS_URI_NAME'].get(context_uri, 'Non-Study Playlist')
+            if (playlist_name == 'Non-Study Playlist') and any(current_track_uri in ss 
+                                                             for ss in current_app.config['PROGRESS_TRACKING'].values()
+                                                             if isinstance(ss,list)):
+                playlist_name = "Out-of-Context Study Song" # Listened song belongs to study but was listened in another playlist
+
+            playlists_in_context[context_cat] = playlists_in_context.get(context_cat, set()) | {playlist_name}
+            
             n_session_tracks = sum(context_counter.values())
             
 
@@ -273,6 +286,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
                     f"Track session id: {n_session_tracks} | "
                     f"Song: {track_name} | "
                     f"Context: {context_cat} | "
+                    f"Study playlist: {playlist_name} | "
                     f"Device type: {device_type} | "
                     f"Track duration ms:  {track_duration_ms} | "
                     f"Progress track time: {ms_to_hh_mm_ss(user_playback_state.get('progress_ms', None))} | "
@@ -322,21 +336,28 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
     proportion_contexts = {context: count / n_session_tracks for context, count in context_counter.items()}
     dominant_context = max(proportion_contexts, key=proportion_contexts.get)
 
-    LOGGER.info(f"Participant {participant_pid} listened to {n_session_tracks} songs lasting {ms_to_hh_mm_ss(session_total_ms)} in total for session {session_id}"+
-                f", with the dominant context being {dominant_context}")
+    # Get playlist name if only one playlist within the dominant context was listened
+    if len(playlists_in_context[dominant_context]) == 1:
+        playlist_listened = " (" + next(iter(playlists_in_context[dominant_context])) + ")"
+    else:
+        playlist_listened = ""
 
-    return session_id, n_session_tracks, session_total_ms, dominant_context
+
+    LOGGER.info(f"Participant {participant_pid} listened to {n_session_tracks} songs lasting {ms_to_hh_mm_ss(session_total_ms)} in total for session {session_id}"+
+                f", with the dominant context being {dominant_context + playlist_listened}")
+
+    return session_id, n_session_tracks, session_total_ms, dominant_context, playlist_listened
 
 
 @with_appcontext
-def __send_survey(participant_id, participant_pid, session_id, account_email, dominant_context):
+def __send_survey(participant_id, participant_pid, session_id, account_email, dominant_context, playlist_listened):
     """
     TODO replace account email with participant's email
       to which the Spotify account was assigned.
     """
 
     subject = 'BEATS Study - Please answer a quick survey!'
-    survey_type = "Music Activity Survey" if dominant_context=="Other" else f"{dominant_context} Music Survey"
+    survey_type = "Music Activity Survey" if dominant_context=="Other" else f"{dominant_context + playlist_listened} Survey"
     title = f"{survey_type} - Session {session_id}"
     greetings = f'Dear Participant {participant_pid},'
     thank_you = ''
@@ -432,11 +453,11 @@ def monitor_playback_state(spotify_email,sleep_time,send_email, th_songs, th_min
     participant_id, participant_pid, participant_email = __validate_account_assignment(spotify_email)
 
     #
-    session_id, n_session_tracks, session_time_ms, dominant_context = __check_activity(spotify_client, sleep_time, spotify_email, participant_pid)
+    session_id, n_session_tracks, session_time_ms, dominant_context, playlist_listened = __check_activity(spotify_client, sleep_time, spotify_email, participant_pid)
 
     #
     if send_email and ((n_session_tracks>=th_songs) or (session_time_ms>= th_minutes * 6e4)):
-        __send_survey(participant_id, participant_pid, session_id, participant_email, dominant_context)
+        __send_survey(participant_id, participant_pid, session_id, participant_email, dominant_context, playlist_listened)
     else:
         LOGGER.info("Activity detected but survey not sent.")
 

@@ -116,7 +116,8 @@ def send_email(to, subject, html, participant=None, **kwargs):
 
 def get_function_context(function_playlist_mapping, context_uri): 
     """
-    Get music function of of playlists listened
+    Get music function of of playlists listened. If song is part of study, but 
+    listened outside the context it won't count.
     -------
     Inputs:
         function_playlist_mapping(dict): Mapping music function and study playlists

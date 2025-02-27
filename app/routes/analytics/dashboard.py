@@ -15,7 +15,7 @@ from app.routes.api.schemas.spotify import SpotifyAccountSchema
 from app.routes.analytics.callbacks import register_callbacks
 
 
-def create_dash_app(server, progress_tracking):
+def create_dash_app(server):
     """
     
     """
@@ -300,4 +300,4 @@ def create_dash_app(server, progress_tracking):
     )
 
     # Register callbacks
-    register_callbacks(dash_app, server, avail_accounts, avail_contexts, progress_tracking)
+    register_callbacks(dash_app, server, avail_accounts, avail_contexts, server.config["PROGRESS_TRACKING"])

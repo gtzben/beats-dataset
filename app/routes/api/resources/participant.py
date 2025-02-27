@@ -130,7 +130,8 @@ class ParticipantResource(Resource):
 
             participant_created = ParticipantSchema().dump(participant)
 
-            self.logger.info(f"User {current_user.email} has registered participant {participant.pid}! Pending for email validation.")
+            # App not externally visible in VM, maybe issue with firewall
+            self.logger.info(f"User {current_user.email} has registered participant {participant.pid}! Pending for email validation with link: {link}")
 
             return participant_created, HTTPStatus.CREATED
         

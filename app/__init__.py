@@ -51,15 +51,20 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     try:
         with open(yaml_path, "r") as file:
             function_playlists_tracks = yaml.safe_load(file)
-        # 
+
+        # Mapping function to playlists URIs
         app.config["STUDY_PLAYLISTS"] = {f: list(pt.keys()) for f, pt in function_playlists_tracks.items()}
+
+        # Mapping playlists URIs to playlists names
+        app.config["PLAYLISTS_URI_NAME"] = {p_uri:p_info["name"] for pt in function_playlists_tracks.values() for p_uri, p_info in pt.items()}
         
-        #
-        progress_tracking = {f: [track for list_tracks in pt.values() for track in list_tracks] for f, pt in function_playlists_tracks.items()}
-        progress_tracking["Participation Time"] = pd.Timedelta(days=int(app.config.get("BATCH_PERIOD_DAYS")))
+        # Mapping functions to track URIs
+        app.config["PROGRESS_TRACKING"] = {f: [track for list_tracks in pt.values() for track in list_tracks["tracks"]] for f, pt in function_playlists_tracks.items()}
+        app.config["PROGRESS_TRACKING"]["Participation Time"] = pd.Timedelta(days=int(app.config.get("BATCH_PERIOD_DAYS")))
+
     except Exception as e:
         app.config["STUDY_PLAYLISTS"] = {"Affective":[], "Eudaimonic":[], "Goal-Attainment":[]}
-        progress_tracking = {"Participation Time":pd.Timedelta(days=int(app.config.get("BATCH_PERIOD_DAYS"))),
+        app.config["PROGRESS_TRACKING"]  = {"Participation Time":pd.Timedelta(days=int(app.config.get("BATCH_PERIOD_DAYS"))),
                              "Affective":[], "Eudaimonic":[], "Goal-Attainment":[]}
 
         print(f"Error loading study playlists: {e}")
@@ -80,8 +85,14 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     app.cli.add_command(run_daily_jobs)
     app.cli.add_command(reset_db)
 
-    #
-    create_dash_app(app, progress_tracking)
+    # Seed data is required, if not in DB an error will occur
+    # this may be the main reason for the analytics dashboard not
+    # being available.
+    try:
+        create_dash_app(app)
+        print("Analytics Dashboard Initialised Successfully")
+    except:
+        print("Dashboard not available. Check for errors or consider reseting the DB")
 
     return app
 
