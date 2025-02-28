@@ -16,7 +16,7 @@ from app.routes.api.schemas.music import MusicListeningSchema
 
 from app.routes.api.resources.spotify import cache_dir
 
-from app.utils import decrypt_email
+from app.utils import decrypt_email, setup_periodic_jobs_logger, handle_error_notification
 
 from flask_mail import Message
 from app.extensions import mail
@@ -31,29 +31,6 @@ LOGGER =logging.getLogger("scheduled_monitoring")
 RAW_DIR = "data/raw"
 
 ERROR_FLAG_FILE = "data/locks/.lock-email-error-{{daily_job}}-{date}"
-
-def __setup_logger(daily_log_path):
-    """
-    
-    """
-
-    global LOGGER
-
-    #
-    LOGGER.setLevel(logging.DEBUG)
-
-    #
-    file_handler = logging.FileHandler(daily_log_path)
-
-    # Create formatters and add them to handlers
-    formatter = logging.Formatter("[%(levelname)s] - [%(asctime)s.%(msecs)03d] - %(name)s - %(filename)s:%(lineno)s - %(funcName)s(): message: %(message)s",
-                                   datefmt='%Y-%m-%d %H:%M:%S')
-    file_handler.setFormatter(formatter)
-
-    #
-    LOGGER.addHandler(file_handler)
-
-    return
 
 
 @with_appcontext
@@ -300,7 +277,7 @@ def notify_experiment_completion():
             participant_email = decrypt_email(obj.email_encrypted)
             greetings = f'Dear {obj.pid},'
             subject = f"BEATS Study - Arrange Meeting to Conclude Participation"
-            thank_you = f"Congratulations, you have reached the end of the experimental period! Thank you for your meaningful contribution to our research."
+            first_sentence = f"Congratulations, you have reached the end of the experimental period! Thank you for your meaningful contribution to our research."
             title = "Conclude Participation"
             next_steps = 'Please arrange a meeting to conclude the experiment and return the data collection instruments. Click the link below to schedule a convenient time.'
             button = "Schedule Meeting"
@@ -312,10 +289,12 @@ def notify_experiment_completion():
                             html=render_template("email_template.html", 
                             title=title,
                             greetings=greetings,
-                            thank_you=thank_you,
+                            first_sentence=first_sentence,
+                            important_info="",
                             next_steps=next_steps,
                             button=button,
-                            link=link))
+                            link=link,
+                            show_link=True))
                 
                 try:
                     conn.send(msg)
@@ -328,48 +307,6 @@ def notify_experiment_completion():
     return
 
 
-@with_appcontext
-def __send_error_email(error_message):
-    """
-
-    """
-
-    subject = 'BEATS Study - Error Running Daily Script '
-    title = "Immediate Attention Required"
-    greetings = f'Dear Experimenter,'
-    thank_you = 'An error has occurred while running daily periodic jobs. The app may not be functioning correctly.'
-    next_steps = f'Error Details: {error_message}'
-    button = ""
-    link = ""
-
-    with mail.connect() as conn:
-        subject = subject
-        msg = Message(subject=subject,
-                      recipients=[current_app.config["ERROR_EMAIL"]],
-                      html=render_template("email_template.html", 
-                      title=title,
-                      greetings=greetings,
-                      thank_you=thank_you,
-                      next_steps=next_steps,
-                      button=button,
-                      link=link))
-
-        try:
-            conn.send(msg)
-            LOGGER.exception("Error email sent to experimenter")
-        except Exception:
-            LOGGER.exception(f"Unable to send error email")
-
-
-def _handle_error_notification(error_message, error_file):
-    """
-    Sends an email notification only once per issue using a flag file.
-    """
-    if not os.path.exists(error_file):
-        __send_error_email(error_message)  # Replace with actual email function
-        with open(error_file, "w") as f:
-            f.write(f"Error reported: {error_message}")
-
 @click.command()
 @click.option("--all_daily_physio", is_flag=True, show_default=True, default=False, help="If a music episode occurred, download all daily data. Otherwise just during music session.")
 def run_daily_jobs(all_daily_physio):
@@ -381,15 +318,19 @@ def run_daily_jobs(all_daily_physio):
     error_date = ERROR_FLAG_FILE.format(date=datetime.today().date())
 
     #
+    global LOGGER
     daily_log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "logs", f"daily_jobs.log")
-    __setup_logger(daily_log_path)
+    LOGGER = setup_periodic_jobs_logger(daily_log_path, LOGGER)
 
     #
     try:
         purge_cache_and_not_verified()
     except Exception as e:
         error_date_job = error_date.format(daily_job="purge")
-        _handle_error_notification(e, error_date_job)
+        error_details = {"subject":'BEATS Study - Error Daily DB Purge',
+                         "first_sentence": 'An error has occurred while cleaning database. The app may not be functioning correctly.',
+                         "error_message": e}
+        handle_error_notification(error_details, error_date_job, LOGGER)
         LOGGER.error(
         "An error occurred while conducting daily cleaning:\n"
         f"Exception: {e}\n"
@@ -400,8 +341,11 @@ def run_daily_jobs(all_daily_physio):
     try:
         transfer_physio_data(all_daily_physio)
     except Exception as e:
-        error_date_job = error_date.format(daily_job="transfer")
-        _handle_error_notification(e, error_date_job)
+        error_date_job = error_date.format(daily_job="physiology")
+        error_details = {"subject":'BEATS Study - Error Transfer Physiology',
+                         "first_sentence": 'An error has occurred while obtaining participants physiological data. The app may not be functioning correctly.',
+                         "error_message": e}
+        handle_error_notification(error_details, error_date_job, LOGGER)
         LOGGER.error(
         "An error occurred while transferring physiological data to the app.\n"
         f"Exception: {e}\n"
@@ -413,7 +357,10 @@ def run_daily_jobs(all_daily_physio):
         notify_experiment_completion()
     except Exception as e:
         error_date_job = error_date.format(daily_job="notify")
-        _handle_error_notification(e, error_date_job)
+        error_details = {"subject":'BEATS Study - Error Completion Notification',
+                         "first_sentence": 'An error has occurred while sending completion email. The app may not be functioning correctly.',
+                         "error_message": e}
+        handle_error_notification(error_details, error_date_job, LOGGER)
         LOGGER.error(
         "An error occurred while notifying experiment completion data to app:\n"
         f"Exception: {e}\n"

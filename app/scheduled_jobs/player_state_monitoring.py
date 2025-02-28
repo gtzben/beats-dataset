@@ -7,6 +7,8 @@ Date: 2024-11-20
 import spotipy
 import os, sys, logging, click
 
+from requests.models import PreparedRequest
+
 import time
 from datetime import datetime, timedelta
 
@@ -15,7 +17,7 @@ import errno, fcntl
 from app.routes.api.models.spotifyaccount import SpotifyAccount
 from app.routes.api.models.participant import Participant
 from app.routes.api.models.music import MusicListening
-from app.utils import decrypt_email, get_function_context
+from app.utils import decrypt_email, get_function_context, setup_periodic_jobs_logger
 from app.extensions import mail
 
 
@@ -28,30 +30,6 @@ from app.extensions import db
 #
 LOGGER =logging.getLogger("scheduled_monitoring")
 ERROR_FLAG_FILE = "data/locks/.lock-email-error-playback-{date}"
-
-def __setup_logger(email_log, dir_path):
-    """
-    
-    """
-
-    global LOGGER
-
-    #
-    LOGGER.setLevel(logging.DEBUG)
-
-    #
-    path_file_handler = os.path.join(dir_path, "..", "..", "data", "logs", f"playback_{email_log}.log")
-    file_handler = logging.FileHandler(path_file_handler)
-
-    # Create formatters and add them to handlers
-    formatter = logging.Formatter("[%(levelname)s] - [%(asctime)s.%(msecs)03d] - %(name)s - %(filename)s:%(lineno)s - %(funcName)s(): message: %(message)s",
-                                   datefmt='%Y-%m-%d %H:%M:%S')
-    file_handler.setFormatter(formatter)
-
-    #
-    LOGGER.addHandler(file_handler)
-
-    return
 
 
 @with_appcontext
@@ -101,8 +79,6 @@ def __validate_account_assignment(email):
     participant_email = decrypt_email(participant.email_encrypted)
     
     return participant_id, participant_pid, participant_email
-
-
 
 
 def __get_playback_state(sp):
@@ -244,7 +220,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
             if (playlist_name == 'Non-Study Playlist') and any(current_track_uri in ss 
                                                              for ss in current_app.config['PROGRESS_TRACKING'].values()
                                                              if isinstance(ss,list)):
-                playlist_name = "Out-of-Context Study Song" # Listened song belongs to study but was listened in another playlist
+                playlist_name += " (Out-of-Context Study Song)" # Listened song belongs to study but was listened in another playlist
 
             playlists_in_context[context_cat] = playlists_in_context.get(context_cat, set()) | {playlist_name}
             
@@ -338,7 +314,7 @@ def __check_activity(sp, sleep_time, email, participant_pid, tolerance=0.01, off
 
     # Get playlist name if only one playlist within the dominant context was listened
     if len(playlists_in_context[dominant_context]) == 1:
-        playlist_listened = " (" + next(iter(playlists_in_context[dominant_context])) + ")"
+        playlist_listened = next(iter(playlists_in_context[dominant_context]))
     else:
         playlist_listened = ""
 
@@ -360,10 +336,14 @@ def __send_survey(participant_id, participant_pid, session_id, account_email, do
     survey_type = "Music Activity Survey" if dominant_context=="Other" else f"{dominant_context + playlist_listened} Survey"
     title = f"{survey_type} - Session {session_id}"
     greetings = f'Dear Participant {participant_pid},'
-    thank_you = ''
+    first_sentence = ''
     next_steps = 'We noticed you recently listened to some music. Please take a moment to answer a few questions about your experience by clicking the button below:'
     button = "Take the Survey"
-    link = current_app.config["SURVEY_LINK"] + f"?ID={participant_id}&PID={participant_pid}&Session={session_id}&Function={dominant_context}"
+
+    req = PreparedRequest()
+    params = {"ID":participant_id, "PID":participant_pid, "Sessions":session_id, "Functions": dominant_context,
+              "Playlists":playlist_listened}
+    req.prepare_url(current_app.config["SURVEY_LINK"], params)
 
     with mail.connect() as conn:
         subject = subject
@@ -372,10 +352,12 @@ def __send_survey(participant_id, participant_pid, session_id, account_email, do
                       html=render_template("email_template.html", 
                       title=title,
                       greetings=greetings,
-                      thank_you=thank_you,
+                      first_sentence=first_sentence,
+                      important_info="",
                       next_steps=next_steps,
                       button=button,
-                      link=link))
+                      link=req.url,
+                      show_link=False))
 
         try:
             conn.send(msg)
@@ -394,8 +376,8 @@ def __send_error_email(error_message):
     subject = 'BEATS Study - Error Playback Monitoring Script '
     title = "Immediate Attention Required"
     greetings = f'Dear Experimenter,'
-    thank_you = 'An error has occurred while retrieving the playback state from Spotify. The app may not be functioning correctly.'
-    next_steps = f'Error Details: {error_message}'
+    first_sentence = 'An error has occurred while retrieving the playback state from Spotify. The app may not be functioning correctly.'
+    important_info = f'Error Details: {error_message}'
     button = ""
     link = ""
 
@@ -406,10 +388,12 @@ def __send_error_email(error_message):
                       html=render_template("email_template.html", 
                       title=title,
                       greetings=greetings,
-                      thank_you=thank_you,
-                      next_steps=next_steps,
+                      first_sentence=first_sentence,
+                      important_info=important_info,
+                      next_steps="",
                       button=button,
-                      link=link))
+                      link=link,
+                      show_link=False))
 
         try:
             conn.send(msg)
@@ -443,7 +427,9 @@ def monitor_playback_state(spotify_email,sleep_time,send_email, th_songs, th_min
             sys.exit (-1)
 
     #
-    __setup_logger(spotify_email, dir_path)
+    global LOGGER
+    monitor_log_path = os.path.join(dir_path, "..", "..", "data", "logs", f"playback_{spotify_email}.log")
+    LOGGER = setup_periodic_jobs_logger(monitor_log_path, LOGGER)
 
 
     #

@@ -15,6 +15,8 @@ from app.extensions import db, jwt, mail
 from configparser import ConfigParser, ExtendedInterpolation
 from app.scheduled_jobs.player_state_monitoring import monitor_playback_state
 from app.scheduled_jobs.daily_jobs import run_daily_jobs
+from app.scheduled_jobs.conditional_survey import run_survey_distribution
+
 
 from app.utils import reset_db
 
@@ -81,6 +83,7 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     __register_extensions(app)
 
     #
+    app.cli.add_command(run_survey_distribution)
     app.cli.add_command(monitor_playback_state)
     app.cli.add_command(run_daily_jobs)
     app.cli.add_command(reset_db)

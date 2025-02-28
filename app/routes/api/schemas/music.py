@@ -27,6 +27,7 @@ class MusicListeningSchema(Schema):
     track_uri = fields.String(dump_only=True)
     device_type = fields.String(dump_only=True)
     context = fields.Method("get_uri_context")
+    context_uri = fields.String(dump_only=True)
     playback_inconsistency = fields.Boolean(dump_only=True)
     offline_playback = fields.Boolean(dump_only=True)
     started_at = fields.DateTime(dump_only=True)

@@ -5,7 +5,7 @@ Author: Benjamin Gutierrez Serafin
 Date: 2024-11-20
 """
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
 from sqlalchemy.orm import aliased
 from app.extensions import db
@@ -133,7 +133,21 @@ class MusicListening(db.Model):
         )
 
         return result
+    
+    @classmethod
+    def get_recent_listening(cls, participant_pid, context_uris, hours_ago):
+        """Retrieve songs listened by a specific participant in specific contexts within the last hours."""
+        datetime_hours_ago = datetime.now() - timedelta(hours=hours_ago)
 
+        return (
+            cls.query.filter(
+                cls.participant_pid == participant_pid,
+                cls.context_uri.in_(context_uris),
+                cls.started_at >= datetime_hours_ago
+            )
+            .order_by(cls.started_at.desc())
+            .all()
+        )
 
     @classmethod
     def get_by_account_email(cls, email):

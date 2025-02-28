@@ -4,24 +4,32 @@
 music_function_1:
   # Replace with your playlist URI
   playlist_uri_1:
-    # Replace with your tracks URI
-    - track_uri_1
-    - track_uri_2
-    - track_uri_3
+    name: # Reaplace with playlist name
+    tracks:
+      # Replace with your tracks URI
+      - track_uri_1
+      - track_uri_2
+      - track_uri_3
   playlist_uri_2:
-    - track_uri_1
-    - track_uri_2
+    name: # Reaplace with playlist name
+    tracks:
+      - track_uri_1
+      - track_uri_2
 
 music_function_2:
   playlist_uri_1:
-    - your_track_uri_1
-    - your_track_uri_2
-    - your_track_uri_3
+    name: # Reaplace with playlist name
+    tracks:
+      - your_track_uri_1
+      - your_track_uri_2
+      - your_track_uri_3
 
 music_function_3:
   your_playlist_uri_1:
-    - your_track_uri_1
-    - your_track_uri_2
-    - your_track_uri_3
+    name: # Reaplace with playlist name
+    tracks:
+      - your_track_uri_1
+      - your_track_uri_2
+      - your_track_uri_3
 
 # Add more music functions, playlists and tracks as needed

@@ -5,7 +5,7 @@ Author: Benjamin Gutierrez Serafin
 Date: 2024-11-18
 """
 
-import bcrypt, hmac, hashlib, click
+import os, bcrypt, hmac, hashlib, click, logging
 from threading import Thread
 from cryptography.fernet import Fernet
 
@@ -177,3 +177,90 @@ def reset_db():
     from flask_migrate import upgrade
     upgrade()  # This applies any new migrations you might have
     print("Applied migrations.")
+
+
+def setup_periodic_jobs_logger(path_file_handler, logger):
+    """
+    
+    """
+
+
+    #
+    logger.setLevel(logging.DEBUG)
+
+    #
+    file_handler = logging.FileHandler(path_file_handler)
+
+    # Create formatters and add them to handlers
+    formatter = logging.Formatter("[%(levelname)s] - [%(asctime)s.%(msecs)03d] - %(name)s - %(filename)s:%(lineno)s - %(funcName)s(): message: %(message)s",
+                                   datefmt='%Y-%m-%d %H:%M:%S')
+    file_handler.setFormatter(formatter)
+
+    #
+    logger.addHandler(file_handler)
+
+    return logger
+
+
+@with_appcontext
+def send_error_email(logger, email_content):
+    """
+
+    """
+
+
+    # Assign variables (optional, or use `default_values` directly)
+    subject = email_content["subject"]
+    title = email_content["title"]
+    greetings = email_content["greetings"]
+    first_sentence = email_content["first_sentence"]
+    important_info = email_content["important_info"]
+    button = email_content["button"]
+    link = email_content["link"]
+
+    with mail.connect() as conn:
+        subject = subject
+        msg = Message(subject=subject,
+                      recipients=[current_app.config["ERROR_EMAIL"]],
+                      html=render_template("email_template.html", 
+                      title=title,
+                      greetings=greetings,
+                      first_sentence=first_sentence,
+                      important_info=important_info,
+                      next_steps="",
+                      button=button,
+                      link=link,
+                      show_link=False))
+
+        try:
+            conn.send(msg)
+            logger.exception("Error email sent to experimenter")
+        except Exception:
+            logger.exception(f"Unable to send error email")
+            raise
+
+
+def handle_error_notification(error_details, error_file, logger):
+    """
+    Sends an email notification only once per issue using a flag file.
+    """
+    if not os.path.exists(error_file):
+
+        # Default values
+        default_values = {
+            "subject": "BEATS Study - An Error Occured",
+            "title": "Immediate Attention Required",
+            "greetings": "Dear Experimenter,",
+            "first_sentence": "An error has occurred while running a periodic job. The app may not be functioning correctly.",
+            "important_info": f"Error Details: {error_details.get('error_message', 'Unknown Error')}",
+            "button": "",
+            "link": "",
+        }
+
+        # Merge provided details with defaults
+        email_content = {**default_values, **error_details}
+        send_error_email(logger, email_content)
+        
+        # Create file to avoid sending repeated emails
+        with open(error_file, "w") as f:
+            f.write(f"Error reported: {error_details.get('error_message', 'Unknown Error')}")

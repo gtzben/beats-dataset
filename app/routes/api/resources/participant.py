@@ -109,7 +109,7 @@ class ParticipantResource(Resource):
             subject = 'BEATS Study - Please, confirm your registration to participte in this study.'
             title = "Verify Your Account"
             greetings = f'Dear Participant {participant.pid},'
-            thank_you = 'Thank you for joining this data collection study. Your participation is crucial for advancing our research in music and its impact on well-being.'
+            first_sentence = 'Thank you for joining this data collection study. Your participation is crucial for advancing our research in music and its impact on well-being.'
             next_steps = 'To complete your registration and begin the data collection process, please confirm your email by clicking the button below:'
             button = "Confirm Your Email"
             link = url_for('api.participantverifyresource',
@@ -123,10 +123,12 @@ class ParticipantResource(Resource):
                        participant.pid,
                        title=title,
                        greetings=greetings,
-                       thank_you=thank_you,
+                       first_sentence=first_sentence,
+                       important_info="",
                        next_steps=next_steps,
                        button=button,
-                       link=link)
+                       link=link,
+                       show_link=True)
 
             participant_created = ParticipantSchema().dump(participant)
 
@@ -487,7 +489,7 @@ class ParticipantWithdrawResource(Resource):
             subject = f"BEATS Study - Please, confirm {participant.pid} withdrawal"
             title = "Confirm Participant Withdrawal"
             greetings = f'Dear Experimenter,'
-            thank_you = f'Participant {participant.pid} has requested to withdraw from the study and for the data collected from him/her to be excluded.'
+            first_sentence = f'Participant {participant.pid} has requested to withdraw from the study and for the data collected from him/her to be excluded.'
             next_steps = 'To proceed with the request, click the link below. Once withdrawn, his/her data will no longer be part of the dataset. If a device is still assigned, an email will be sent to the participant to arrange a time to return the provided instruments.'
             button = "Confirm Withdrawal"
             link = url_for('api.participantexcluderesource',token=token,_external=True)
@@ -499,10 +501,12 @@ class ParticipantWithdrawResource(Resource):
                        participant.pid,
                        title=title,
                        greetings=greetings,
-                       thank_you=thank_you,
+                       first_sentence=first_sentence,
+                       important_info="",
                        next_steps=next_steps,
                        button=button,
-                       link=link)
+                       link=link,
+                       show_link=True)
             
             return {'message': f'Check your email {current_user.email} to confirm that participant {participant.pid} will be excluded from the study.'}, HTTPStatus.OK
         else:
@@ -564,12 +568,12 @@ class ParticipantExcludeResource(Resource):
             self.logger.info(f"Participant {participant_id} responses removed from questionnaire files")
 
         # subject = f"BEATS Study - Arrange Meeting to Conclude Participation"
-        # thank_you = f'Thank you for your valuable participation in the BEATS study. We appreciate your contribution to our research.'
+        # first_sentence = f'Thank you for your valuable participation in the BEATS study. We appreciate your contribution to our research.'
         # title = "Conclude Participation"
         
         title = "Opt out Request Confirmed"
         greetings = f'Dear {withdraw_pid},'
-        thank_you = f'Thank you for notifying us of your withdrawal from the BEATS study. Your request has been received, and your data will no longer be included in the study.'
+        first_sentence = f'Thank you for notifying us of your withdrawal from the BEATS study. Your request has been received, and your data will no longer be included in the study.'
 
         if participant.device_serial is None:
             subject = f"BEATS Study - Retroactive opt-out"
@@ -590,10 +594,12 @@ class ParticipantExcludeResource(Resource):
                     withdraw_pid,
                     title=title,
                     greetings=greetings,
-                    thank_you=thank_you,
+                    first_sentence=first_sentence,
+                    important_info="",
                     next_steps=next_steps,
                     button=button,
-                    link=link)
+                    link=link,
+                    show_link=True)
 
         self.logger.info(f"Withdrawal email sent to participant {withdraw_pid}. Device assigned to participant: {participant.device_serial}")
 

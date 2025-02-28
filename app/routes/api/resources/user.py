@@ -86,7 +86,7 @@ class UserResource(Resource):
         subject = 'BEATS Study - Please, confirm your registration to start using the BEATS API'
         title = "Verify Your Email"
         greetings = 'Dear Collaborator,'
-        thank_you = 'Welcome, and thank you for contributing to the BEATS dataset.'
+        first_sentence = 'Welcome, and thank you for contributing to the BEATS dataset.'
         next_steps = 'To complete your registration and access the platform, please confirm your email by clicking the button below:'
         button = "Confirm Your Email"
 
@@ -100,10 +100,12 @@ class UserResource(Resource):
                    'email_template.html',
                    title=title,
                    greetings=greetings,
-                   thank_you=thank_you,
+                   first_sentence=first_sentence,
+                   important_info="",
                    next_steps=next_steps,
                    button = button,
-                   link=link)
+                   link=link,
+                   show_link=True)
 
         user_created = UserSchema().dump(user)
 
@@ -178,7 +180,7 @@ class ResetPwdRequest(Resource):
         subject = 'BEATS Study - Reset password request'
         title = "Reset Your Password"
         greetings = 'Dear Collaborator,'
-        thank_you = ''
+        first_sentence = ''
         next_steps = 'To reset your password click on the link below. If you have not requested a password reset simply ignore this message.'
         button = "Reset Your Password"
 
@@ -192,10 +194,12 @@ class ResetPwdRequest(Resource):
                    'email_template.html',
                    title=title,
                    greetings=greetings,
-                   thank_you=thank_you,
+                   first_sentence=first_sentence,
+                   important_info="",
                    next_steps=next_steps,
                    button = button,
-                   link=link)
+                   link=link,
+                   show_link=True)
 
         return {"message": "An email has been sent with instructions to reset your password."}, HTTPStatus.OK
     
