@@ -21,13 +21,9 @@ from app.routes.api.models.participant import Participant
 from app.routes.api.schemas.music import MusicListeningSchema
 from app.routes.api.schemas.participant import ParticipantFlatSchema
 
-
-
 #
 LOGGER =logging.getLogger("survey_distribution")
 ERROR_FLAG_FILE = "data/locks/.lock-email-error-survey-{date}"
-
-
 
 
 def _concat_strings(items):
@@ -117,51 +113,6 @@ def distribute_conditional_survey(hours_offset):
     return
 
 
-@with_appcontext
-def __send_error_email(error_message):
-    """
-
-    """
-
-    subject = 'BEATS Study - Error Running Daily Script'
-    title = "Immediate Attention Required"
-    greetings = f'Dear Experimenter,'
-    first_sentence = 'An error has occurred while running daily periodic jobs. The app may not be functioning correctly.'
-    next_steps = f'Error Details: {error_message}'
-    button = ""
-    link = ""
-
-    with mail.connect() as conn:
-        subject = subject
-        msg = Message(subject=subject,
-                      recipients=[current_app.config["ERROR_EMAIL"]],
-                      html=render_template("email_template.html", 
-                      title=title,
-                      greetings=greetings,
-                      first_sentence=first_sentence,
-                      important_info="",
-                      next_steps=next_steps,
-                      button=button,
-                      link=link,
-                      show_link=False))
-
-        try:
-            conn.send(msg)
-            LOGGER.exception("Error email sent to experimenter")
-        except Exception:
-            LOGGER.exception(f"Unable to send error email")
-
-
-def _handle_error_notification(error_message, error_file):
-    """
-    Sends an email notification only once per issue using a flag file.
-    """
-    if not os.path.exists(error_file):
-        __send_error_email(error_message)  # Replace with actual email function
-        with open(error_file, "w") as f:
-            f.write(f"Error reported: {error_message}")
-
-
 @click.command()
 @click.option("--hours_offset", default=12, help='Number of hours to check music activity')
 def run_survey_distribution(hours_offset):
@@ -191,4 +142,3 @@ def run_survey_distribution(hours_offset):
         f"Exception: {e}\n"
         f"Traceback:\n{traceback.format_exc()}"
     )
-        
