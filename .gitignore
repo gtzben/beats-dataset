@@ -165,5 +165,6 @@ cython_debug/
 config.ini
 migrations/
 data/beats.db
+data/raw/
 cron_jobs.txt
 stimuli.yaml

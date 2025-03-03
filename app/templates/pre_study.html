@@ -183,6 +183,17 @@
 
         <p>20.- {{form.demo.demo_27.label}}: {{ form.demo.demo_27() }}</p>
 
+        <p>21. {{ form.demo.demo_28.label }}:
+            {{ form.demo.demo_28(onchange="toggleSelfDescribeField(this)", **{'data-other-field': 'other-21'}) }}
+            <br>
+            <span id="other-21" style="display: none;">
+                <label id="other-21-label"><strong>{{ form.demo.demo_29.label }}</strong></label>
+                {{ form.demo.demo_29(class="form-control") }}
+            </span>
+        </p>
+
+        <p>22.- {{form.demo.demo_30.label}}: {{ form.demo.demo_30() }}</p>
+
 
         {% elif current_page == 3 %}
         <h2>Questionnaire 1/6</h2>

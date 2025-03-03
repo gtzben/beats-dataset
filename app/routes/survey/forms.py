@@ -254,6 +254,19 @@ class Demographics(FlaskForm):
                         default=None,
                         validators=[DataRequired()])
     
+    demo_28 = SelectField("What type of mobile device do you use?",
+                    choices=[
+                            (None, '--'),
+                            ('iphone', 'iPhone'),
+                            ('android', "Android"),
+                            ('other', "Other")
+                        ],
+                        default=None,
+                        validators=[DataRequired()])
+    demo_29 = StringField("If you selected 'Other', please specify:", validators=[Optional()])
+
+    demo_30 = StringField("What is the specific model of your mobile device?", validators=[Optional()])
+    
     
 
 class TIPI(FlaskForm):

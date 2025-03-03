@@ -149,13 +149,13 @@ def create_barcharts_demo(df_responses):
         "Ethnicity": 4,  
         "Employment": 10,  
         "Workplace": 12,  
-        "People Nearby": 14,  
         "Tech Proficiency": 19,  
         "Non-Dom Hand": 20,
         "Music Well-being": 22,  
         "Streaming Likely": 24,  
         "Main Streaming": 25,
-        "Playlists Listening": 27  
+        "Playlists Listening": 27,  
+        "Mobile Phone": 28  
     }
 
     # Define number of rows and columns for subplots
