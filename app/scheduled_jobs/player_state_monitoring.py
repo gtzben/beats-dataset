@@ -333,7 +333,7 @@ def __send_survey(participant_id, participant_pid, session_id, account_email, do
     """
 
     subject = 'BEATS Study - Please answer a quick survey!'
-    survey_type = "Music Activity Survey" if dominant_context=="Other" else f"{dominant_context + " " + playlist_listened} Survey"
+    survey_type = "Music Activity Survey" if dominant_context=="Other" else f"{dominant_context + ' ' + playlist_listened} Survey"
     title = f"{survey_type} - Session {session_id}"
     greetings = f'Dear Participant {participant_pid},'
     first_sentence = ''
