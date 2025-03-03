@@ -72,7 +72,7 @@ def distribute_conditional_survey(hours_offset):
         context_counts = df_recent_tracks.groupby("context").size().to_dict()
         study_playlist_listened = list(df_recent_tracks["context_uri"].map(current_app.config["PLAYLISTS_URI_NAME"]).unique())        
         
-        LOGGER.debug(f"Participant {id_participant} listened to music for {context_counts} during session(s) {sessions} by playing {study_playlist_listened} playlists.")
+        LOGGER.info(f"Participant {id_participant} listened to music for {context_counts} during session(s) {sessions} by playing {study_playlist_listened} playlists.")
         
         # Send email
         subject = 'BEATS Study - Please answer a quick survey!'

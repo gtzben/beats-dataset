@@ -207,7 +207,7 @@ def create_dash_app(server):
             # Barcharts Subplots
             dbc.Row(
                 dbc.Col(
-                    dcc.Graph(id="barcharts-subplot-demo", style={"height": "600px"}),
+                    dcc.Graph(id="barcharts-subplot-demo", style={"height": "700px"}),
                     width=12
                 ),
                 className="mb-4"

@@ -189,7 +189,7 @@ def create_barcharts_demo(df_responses):
 
     # Update layout
     bar_charts_demo.update_layout(
-        height=600, width=1100, # Update size accordingly
+        height=700, width=1100, # Update size accordingly
         title_text="Demographics Participants",
         template="plotly_white",
         showlegend=False, bargap=0.3

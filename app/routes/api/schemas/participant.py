@@ -13,6 +13,8 @@ from app.routes.api.schemas.music import MusicListeningSchema
 from app.routes.api.models.survey import Questionnaire, Response
 from sqlalchemy.orm import joinedload
 
+import numpy as np
+from datetime import datetime
 
 
 class ParticipantSchema(Schema):
@@ -84,9 +86,18 @@ class ParticipantFlatSchema(Schema):
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     last_physio_ts = fields.Int(dump_only=True)
+    last_physio_dt = fields.Method("get_physio_dt")
 
     @post_dump(pass_many=True)
     def wrap(self, data, many, **karwgs):
         if many:
             return {'data': data}
         return data
+    
+    def get_physio_dt(self, obj):
+        """
+        """
+        if obj.last_physio_ts is None:
+            return None
+        else: 
+            return datetime.fromtimestamp(obj.last_physio_ts).strftime('%Y-%m-%dT%H:%M:%S')

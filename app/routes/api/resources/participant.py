@@ -188,8 +188,12 @@ class ParticipantPortal(Resource):
                 is_completed = parse_boolean(request.args.get("is-completed"))
                 all_participants = Participant.get_all_participants(is_active=is_active, is_verified=is_verified,
                                                                      is_withdrawn=is_withdrawn, is_completed=is_completed)
-                data = (ParticipantFlatSchema(many=True, exclude=("device_serial", "spotify_account", "is_verified", "updated_at"))
-                        .dump(all_participants))
+                try:
+
+                    data = (ParticipantFlatSchema(many=True, exclude=("device_serial", "spotify_account", "is_verified", "updated_at", "last_physio_ts"))
+                            .dump(all_participants))
+                except Exception as e:
+                    self.logger.error(f"An error occur with the schema: {e}")
 
             return data, HTTPStatus.OK
         else:
