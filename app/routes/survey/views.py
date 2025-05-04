@@ -83,7 +83,7 @@ def login():
         }
 
         # sending post request and saving response as response object
-        response = requests.post(url=url_for("api.participantlogin", _external=True), json=data)
+        response = requests.post(url=url_for("api.participantlogin", _external=True), json=data, verify=False)
         api_data = response.json()
 
         if response.status_code == HTTPStatus.OK:
@@ -218,7 +218,7 @@ def pre_study():
 
              # sending post request and saving response as response object
             response = requests.post(url=url_for("api.surveyresponsesresource", _external=True,
-                                                  participant_pid=session.get(f'{request.blueprint}_participant_pid')), json=collected_data)
+                                                  participant_pid=session.get(f'{request.blueprint}_participant_pid')), json=collected_data, verify=False)
             api_data = response.json()
 
             if response.status_code == HTTPStatus.OK:
@@ -312,7 +312,7 @@ def post_study():
     if session.get(f'{request.blueprint}_is_withdrawn'):
         #
         response = requests.post(url=url_for("api.participantconcluderesource", _external=True,
-                                             participant_pid=session.get(f'{request.blueprint}_participant_pid')))
+                                             participant_pid=session.get(f'{request.blueprint}_participant_pid')), verify=False)
         api_data = response.json()
 
         print(response)
@@ -402,7 +402,7 @@ def post_study():
                 
                 # sending post request and saving response as response object
                 response = requests.post(url=url_for("api.participantconcluderesource", _external=True,
-                                                    participant_pid=session.get(f'{request.blueprint}_participant_pid')), json=collected_data)
+                                                    participant_pid=session.get(f'{request.blueprint}_participant_pid')), json=collected_data, verify=False)
                 api_data = response.json()
 
                 if response.status_code == HTTPStatus.OK:

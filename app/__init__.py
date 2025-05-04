@@ -44,7 +44,7 @@ def create_app(config_file="config.ini", section="DevelopmentConfig"):
     #
     for conf in list(config[section]):
         if conf in ['sqlalchemy_database_uri', 'encrypt_email_key', 'jwt_access_token_expires',
-                    'mail_port','mail_use_tls','mail_use_ssl']:
+                    'mail_port','mail_use_tls','mail_use_ssl', 'mail_username', 'mail_password']:
             app.config[conf.upper()] = eval(config[section][conf]) # requires os
         else:
             app.config[conf.upper()] = config[section][conf]

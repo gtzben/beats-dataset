@@ -29,7 +29,7 @@ def login():
         }
 
         # sending post request and saving response as response object
-        response = requests.post(url=url_for("api.loginresource", _external=True), json=data)
+        response = requests.post(url=url_for("api.loginresource", _external=True), json=data, verify=False)
         api_data = response.json()
 
         if response.status_code == HTTPStatus.OK:
@@ -61,7 +61,7 @@ def register():
         }
 
         # sending post request and saving response as response object
-        response = requests.post(url=url_for("api.userresource", _external=True), json=data)
+        response = requests.post(url=url_for("api.userresource", _external=True), json=data, verify=False)
         api_data = response.json()
 
         if response.status_code == HTTPStatus.CREATED:
@@ -90,7 +90,7 @@ def reset_password_request():
         data = {"email": form.email.data}
         
         # sending post request and saving response as response object
-        response = requests.post(url=url_for("api.resetpwdrequest", _external=True), json=data)
+        response = requests.post(url=url_for("api.resetpwdrequest", _external=True), json=data, verify=False)
         api_data = response.json()
 
         if response.status_code == HTTPStatus.OK:
@@ -119,7 +119,7 @@ def reset_password(reset_pwd_token):
                 "password": form.password.data}
         
         # sending post request and saving response as response object
-        response = requests.post(url=url_for("api.resetpwd", _external=True), json=data)
+        response = requests.post(url=url_for("api.resetpwd", _external=True), json=data, verify=False)
         api_data = response.json()
 
         if response.status_code == HTTPStatus.OK:
@@ -147,7 +147,8 @@ def login_required(f):
 def logout():
     response = requests.post(
         url_for("api.logoutresource", _external=True),
-        headers={"Authorization": f"Bearer {session['access_token']}"}
+        headers={"Authorization": f"Bearer {session['access_token']}"},
+        verify=False
     )
     if response.status_code in [HTTPStatus.OK, HTTPStatus.UNAUTHORIZED]:
         # Clear the session
@@ -189,7 +190,7 @@ def register_resources():
         # sending post request and saving response as response object
         response = requests.post(url=url_for("api.participantresource", _external=True),
                                 headers={"Authorization": f"Bearer {session['access_token']}"},
-                                json=participant_data)
+                                json=participant_data, verify=False)
         if response.status_code == HTTPStatus.CREATED:
             flash(f"Successfully registered participant: {participant_data['pid']}", "success")
             return redirect(url_for('portal.dashboard'))
@@ -214,7 +215,7 @@ def register_resources():
         # sending post request and saving response as response object
         response = requests.post(url=url_for("api.deviceresource", _external=True),
                                  headers={"Authorization": f"Bearer {session['access_token']}"},
-                                 json=device_data)
+                                 json=device_data, verify=False)
         if response.status_code == HTTPStatus.CREATED:
             flash(f"Successfully registered device: {device_data['serial_number']}", "success")
             return redirect(url_for('portal.dashboard'))
@@ -242,17 +243,17 @@ def view_resources():
 
     # sending get request to obtain participants data
     response_participants = requests.get(url=url_for("api.participantportal", _external=True),
-                            headers={"Authorization": f"Bearer {session['access_token']}"} )
+                            headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
     participants_data = response_participants.json()
 
     # sending get request to obtain devices data
     response_devices = requests.get(url=url_for("api.deviceresource", _external=True),
-                            headers={"Authorization": f"Bearer {session['access_token']}"} )
+                            headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
     devices_data = response_devices.json()
 
     # sending get request to obtain spotify accounts data
     response_spotify = requests.get(url=url_for("api.spotifyaccountsresource", _external=True),
-                            headers={"Authorization": f"Bearer {session['access_token']}"} )
+                            headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
     spotify_data = response_spotify.json()
 
     if (response_participants.status_code == response_devices.status_code ==
@@ -291,20 +292,20 @@ def associate_resources():
     # Fetch participants, devices and accounts available for dropdowns
     participants_url = url_for("api.participantportal", _external=True) + "?is-verified=true&is-active=true&is-withdrawn=false"
     response_participants = requests.get(url=participants_url,
-                            headers={"Authorization": f"Bearer {session['access_token']}"})
+                            headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
     participants_data = response_participants.json()
 
 
     device_url = url_for("api.deviceresource", _external=True) + "?available-only=true"
     response_devices = requests.get(url=device_url,
-                            headers={"Authorization": f"Bearer {session['access_token']}"})
+                            headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
     devices_data = response_devices.json()
 
 
 
     spotify_url = url_for("api.spotifyaccountsresource", _external=True) + "?available-only=true"
     response_spotify = requests.get(url=spotify_url,
-                            headers={"Authorization": f"Bearer {session['access_token']}"})
+                            headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
     spotify_data = response_spotify.json()
 
 
@@ -342,7 +343,7 @@ def associate_resources():
 
         # sending post request and saving response as response object
         response = requests.patch(url=associate_url, json=data,
-                                   headers={"Authorization": f"Bearer {session['access_token']}"})
+                                   headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
         api_data = response.json()
 
         if response.status_code == HTTPStatus.OK:
@@ -370,7 +371,7 @@ def exclude_participant_data():
     # Fetch valid participants for dropdown list
     participants_url = url_for("api.participantportal", _external=True) + "?is-verified=true&is-withdrawn=false"
     response_participants = requests.get(url=participants_url,
-                            headers={"Authorization": f"Bearer {session['access_token']}"})
+                            headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
     participants_data = response_participants.json()
 
     if response_participants == HTTPStatus.UNAUTHORIZED:
@@ -394,7 +395,7 @@ def exclude_participant_data():
                                 participant_pid=withdrawal_form.participants.data)
 
         # sending post request and saving response as response object
-        response = requests.post(url=withdrawal_url, headers={"Authorization": f"Bearer {session['access_token']}"})
+        response = requests.post(url=withdrawal_url, headers={"Authorization": f"Bearer {session['access_token']}"}, verify=False)
         api_data = response.json()
 
         if response.status_code == HTTPStatus.OK:
@@ -428,7 +429,7 @@ def refresh_access_token():
     if 'refresh_token' in session:
         response = requests.post(
             url_for("api.refreshresource", _external=True),
-            headers={"Authorization": f"Bearer {session['refresh_token']}"}
+            headers={"Authorization": f"Bearer {session['refresh_token']}"}, verify=False
         )
         if response.status_code == HTTPStatus.OK:
             session['access_token'] = response.json()['access_token']

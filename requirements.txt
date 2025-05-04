@@ -20,9 +20,9 @@ cycler==0.12.1
 dash==2.18.2
 dash-bootstrap-components==1.6.0
 dash-core-components==2.0.0
-dash-daq==0.5.0
 dash-html-components==2.0.0
 dash-table==5.0.0
+dash_daq==0.5.0
 debugpy==1.8.9
 decorator==5.1.1
 dnspython==2.6.1
@@ -58,7 +58,7 @@ marshmallow==3.22.0
 matplotlib==3.7.5
 matplotlib-inline==0.1.7
 nbformat==5.10.4
-nest_asyncio==1.6.0
+nest-asyncio==1.6.0
 numpy==1.24.4
 packaging==24.2
 pandas==2.0.3
@@ -98,6 +98,7 @@ traitlets==5.14.3
 typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==1.26.20
+uWSGI==2.0.28
 wcwidth==0.2.13
 Werkzeug==3.0.6
 WTForms==3.1.2
