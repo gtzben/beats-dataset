@@ -1,4 +1,3 @@
-
 <div align="center" style="font-size: 1.8em;">
   <strong>Unlock the Therapeutic Potential of Music: The BEATS Dataset</strong>
   <br><br>
@@ -24,6 +23,8 @@
 <a href="https://www.fahim-kawsar.net/" target="_blank">Fahim&nbsp;Kawsar</a>
 </div>
 
+<img alt="beats-protocol" src="https://github.com/user-attachments/assets/38b20866-718a-445e-9489-c63df5b654f1" />
+
 ---
 
 # Introduction 
@@ -36,6 +37,9 @@ All data is anonymised, and each participant record includes:
 - Music listening activity and playback context (aligned with physiology, ~275 hours)
 - Raw physiological signals (BVP and EDA, indexing affective states) (>10,000 hours)
 - Self-reported evaluations of the therapeutic effect of playlists
+
+<img alt="physio-music-align" src="https://github.com/user-attachments/assets/e47ef5b9-3c93-4e58-94ad-eda72ca96e12" />
+
 
 This repository contains the system infrastructure for collecting, storing, and managing the BEATS dataset, including integration with the EmbracePlus wearable device and Spotify API.
 
