@@ -1,20 +1,47 @@
-# The BEATS Dataset 🎵 - System for Data Collection
 
+<div align="center" style="font-size: 1.8em;">
+  <strong>Unlock the Therapeutic Potential of Music: The BEATS Dataset</strong>
+  <br><br>
+</div>
+
+<div align="center"> 
+<a href="https://beats-dataset.github.io/">
+  <img src="https://img.shields.io/badge/Website Webpage-4F6D8A?style=for-the-badge">
+</a>
+<a href="https://dl.acm.org/doi/10.1145/3714394.3756341">
+  <img src="https://img.shields.io/badge/Paper-ACM-EA5E58?style=for-the-badge">
+</a>
+<a href="#">
+  <img src="https://img.shields.io/badge/Dataset-%F0%9F%A4%97%20HuggingFace-F6B26B?style=for-the-badge">
+</a>
+</div>
+
+<br>
+
+<div align="center">
+<a href="https://gtzben.github.io/" target="_blank">Benjamin&nbsp;Gutierrez&nbsp;Serafin</a> &emsp;
+<a href="https://www.tanayag.com/" target="_blank">Tanaya&nbsp;Guha</a> &emsp;
+<a href="https://www.fahim-kawsar.net/" target="_blank">Fahim&nbsp;Kawsar</a>
+</div>
+
+---
+
+# Introduction 
 The **BEATS Dataset**—*Biomarkers, Experience and Affect from Therapeutic Soundscapes*—is a music dataset with aligned physiological data collected in-the-wild. It is designed to support research at the intersection of music therapy, affective computing, well-being, and signal processing, among others.
 
 All data is anonymised, and each participant record includes:
 - Demographic information (e.g., gender, age)
 - Individual differences (e.g., personality traits, music preferences)
 - Wellbeing measures (e.g., pre/post stress, depression levels)
-- Music listening activity and playback context
-- Raw physiological signals (BVP and EDA, indexing affective states)
+- Music listening activity and playback context (aligned with physiology, ~275 hours)
+- Raw physiological signals (BVP and EDA, indexing affective states) (>10,000 hours)
 - Self-reported evaluations of the therapeutic effect of playlists
 
 This repository contains the system infrastructure for collecting, storing, and managing the BEATS dataset, including integration with the EmbracePlus wearable device and Spotify API.
 
 ---
 
-## 🛠 Setup Instructions
+## 🛠 Data Collection System Setup
 
 ### 1. Install Required Software
 
@@ -87,6 +114,22 @@ See this [guide](https://blog.miguelgrinberg.com/post/run-your-flask-regularly-s
 
 ---
 
-## 📄 License & Citation
+## 📄 License
 Please refer to `LICENSE.md` for licensing details.
-If you use The BEATS Dataset or the collection system in your work, please cite the associated publication (to be added upon release).
+
+
+## 📚 Citation
+
+If you use the BEATS dataset or collection system, please cite:
+
+```bash
+
+@inproceedings{gutierrez2025towards,
+  title={Towards Capturing the Therapeutic Effects of Music in Everyday Life: Building the Beats Dataset},
+  author={Gutierrez Serafin, Benjamin and Guha, Tanaya and Kawsar, Fahim},
+  booktitle={Companion of the 2025 ACM International Joint Conference on Pervasive and Ubiquitous Computing},
+  pages={1665--1669},
+  year={2025}
+}
+
+```
