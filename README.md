@@ -25,7 +25,9 @@
 
 <br>
 
-<img alt="beats-protocol" src="https://github.com/user-attachments/assets/38b20866-718a-445e-9489-c63df5b654f1" />
+<img width="5616" height="3411" alt="beats_methodology-6" src="https://github.com/user-attachments/assets/60ff4aa4-4803-44fd-adec-e347fd66fec9" />
+
+
 
 ---
 
@@ -48,7 +50,7 @@ BEATS is uniquely positioned to support research in:
 
 <br>
 
-<img alt="physio-music-align" src="https://github.com/user-attachments/assets/e47ef5b9-3c93-4e58-94ad-eda72ca96e12" />
+<img alt="beats-protocol" src="https://github.com/user-attachments/assets/38b20866-718a-445e-9489-c63df5b654f1" />
 
 <br>
 
