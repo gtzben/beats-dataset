@@ -25,7 +25,7 @@
 
 <br>
 
-<img width="5616" height="3411" alt="beats_methodology-6" src="https://github.com/user-attachments/assets/60ff4aa4-4803-44fd-adec-e347fd66fec9" />
+<img alt="beats-dataset" src="https://github.com/user-attachments/assets/60ff4aa4-4803-44fd-adec-e347fd66fec9" />
 
 
 
