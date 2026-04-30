@@ -30,18 +30,27 @@
 ---
 
 # Introduction 
-The **BEATS Dataset**—*Biomarkers, Experience and Affect from Therapeutic Soundscapes*—is a music dataset with aligned physiological data collected in-the-wild. It is designed to support research at the intersection of music therapy, affective computing, well-being, and signal processing, among others.
+The **BEATS Dataset** (Biomarkers, Experience and Affect from Therapeutic Soundscapes) is a longitudinal collection of raw physiological
+signals from music listeners in free-moving environments, enabling
+the study of music–physiology relationships in real-world settings.
 
-All data is anonymised, and each participant record includes:
-- Demographic information (e.g., gender, age)
-- Individual differences (e.g., personality traits, music preferences)
-- Wellbeing measures (e.g., pre/post stress, depression levels)
-- Music listening activity and playback context (aligned with physiology, ~275 hours)
-- Raw physiological signals (BVP and EDA, indexing affective states) (>10,000 hours)
-- Self-reported evaluations of the therapeutic effect of playlists
+Data were collected using the Empatica EmbracePlus device, capturing multimodal physiological signals alongside self-paced listening to curated therapeutic playlists, self-reports of perceived effects, individual differences, and
+pre/post-experiment well-being measure.
+
+It includes data from **30 participants** monitored over **21 days**, yielding **10,725 hours** of raw physiological recordings from PPG, EDA, skin temperature, and triaxial accelerometry. Notably, a subset of **262.2 hours** is aligned
+with music playback, corresponding to **844 listening sessions** across
+**3 music listening contexts** involving **117 curated tracks**.
+
+BEATS is uniquely positioned to support research in:
+- music therapy and digital health
+- affective computing and multimodal modelling
+- personalised intervention and recommendation systems
+
+<br>
 
 <img alt="physio-music-align" src="https://github.com/user-attachments/assets/e47ef5b9-3c93-4e58-94ad-eda72ca96e12" />
 
+<br>
 
 This repository contains the system infrastructure for collecting, storing, and managing the BEATS dataset, including integration with the EmbracePlus wearable device and Spotify API.
 
