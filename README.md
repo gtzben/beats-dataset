@@ -5,7 +5,7 @@
 
 <div align="center"> 
 <a href="https://beats-dataset.github.io/">
-  <img src="https://img.shields.io/badge/Website-Webpage-4F6D8A?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Project-Website-4F6D8A?style=for-the-badge">
 </a>
 <a href="https://dl.acm.org/doi/10.1145/3714394.3756341">
   <img src="https://img.shields.io/badge/Paper-ACM-EA5E58?style=for-the-badge">
