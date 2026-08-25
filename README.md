@@ -1,5 +1,5 @@
 <div align="center" style="font-size: 1.8em;">
-  <strong>Unlock the Therapeutic Potential of Music: The BEATS Dataset</strong>
+  <strong>The BEATS Dataset: Towards Understanding Music-Physiology Dynamics in Real-World Scenarios</strong>
   <br><br>
 </div>
 
